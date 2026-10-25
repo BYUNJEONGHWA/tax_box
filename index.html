@@ -15,6 +15,11 @@
 <script>
   // 저장된 글씨 크기를 화면이 그려지기 전에 적용 (깜빡임 방지)
   try { document.documentElement.dataset.size = localStorage.getItem('taxbox-size') || '1'; } catch (e) {}
+
+  // 카카오톡 안에서 열면 앱 설치가 안 되므로, 바로 휴대폰 기본 브라우저(크롬·사파리)로 다시 엽니다.
+  if (/KAKAOTALK/i.test(navigator.userAgent)) {
+    location.href = 'kakaotalk://web/openExternal?url=' + encodeURIComponent(location.href);
+  }
 </script>
 <style>
   :root {
@@ -219,6 +224,22 @@
   .seg.size button[data-size="3"] { font-size: 28px; }
   .seg.pad button { font-size: 18px; }
   .sheet .btn { margin-top: 22px; font-size: 20px; }
+  .install-sheet { text-align: center; }
+  .install-sheet h2 { margin: 12px 0 8px; font-size: 24px; }
+  .install-icon { width: 72px; height: 72px; border-radius: 16px; }
+  #installBody { font-size: 18px; color: var(--muted); }
+  #installBody p { margin: 6px 0; }
+  #installBody ol { text-align: left; margin: 14px 0 0; padding: 0; list-style: none; counter-reset: s; }
+  #installBody li {
+    counter-increment: s; display: flex; gap: 12px; align-items: flex-start;
+    font-size: 19px; color: var(--text); padding: 10px 0; border-top: 1px solid var(--line);
+  }
+  #installBody li::before {
+    content: counter(s); flex: none; width: 30px; height: 30px; border-radius: 50%;
+    background: var(--primary); color: #fff; font-weight: 800; font-size: 16px;
+    display: grid; place-items: center;
+  }
+  .install-sheet .btn + .btn { margin-top: 10px; }
 
   /* 큰 숫자판 (글씨 크기와 상관없이 고정) */
   .keypad {
@@ -288,6 +309,17 @@
       <button data-pad="phone">휴대폰 자판<small>원래 쓰던 자판</small></button>
     </div>
     <button id="settingsClose" class="btn btn-primary">닫기</button>
+  </div>
+</div>
+
+<!-- 앱 설치 안내 (휴대폰으로 처음 들어왔을 때) -->
+<div id="installSheet" class="sheet-back hidden">
+  <div class="sheet install-sheet" role="dialog" aria-modal="true" aria-labelledby="installTitle">
+    <img src="icons/icon-192.png" alt="" class="install-icon">
+    <h2 id="installTitle"></h2>
+    <div id="installBody"></div>
+    <button id="installGo" class="btn btn-primary hidden"></button>
+    <button id="installLater" class="btn btn-ghost">나중에 할게요</button>
   </div>
 </div>
 
@@ -880,23 +912,97 @@
   route();
 
   // ---- 앱 설치 ----
+  // 휴대폰 브라우저는 사이트가 스스로 앱을 설치하는 것을 막습니다.
+  // 그래서 처음 들어오면 설치 안내 창을 바로 띄워, 버튼 한 번으로 설치하게 합니다.
+  const ua = navigator.userAgent;
   const isStandalone = matchMedia('(display-mode: standalone)').matches || navigator.standalone;
+  const isIOS = /iphone|ipad|ipod/i.test(ua) || (/macintosh/i.test(ua) && navigator.maxTouchPoints > 1);
+  const isAndroid = /android/i.test(ua);
+  // 카카오톡 말고도 앱 안에서 열리는 브라우저 (네이버, 인스타그램, 페이스북, 라인, 밴드, 다음)
+  const isInApp = /KAKAOTALK|NAVER\(inapp|Instagram|FBAN|FBAV|Line\/|BAND\/|DaumApps/i.test(ua);
+  const LATER_KEY = 'taxbox-install-later';
+  const LATER_DAYS = 3;
   let installEvent = null;
-  window.addEventListener('beforeinstallprompt', (e) => {
-    e.preventDefault();
-    installEvent = e;
-    $('installBox').classList.remove('hidden');
-  });
-  $('installBtn').addEventListener('click', async () => {
+
+  function laterRecently() {
+    const t = Number(load(LATER_KEY, '0'));
+    return Date.now() - t < LATER_DAYS * 24 * 60 * 60 * 1000;
+  }
+
+  function openInstallSheet(kind) {
+    const title = $('installTitle'), body = $('installBody'), go = $('installGo');
+    go.classList.add('hidden');
+    // 아이폰은 이 창을 닫아야 공유 버튼을 누를 수 있으므로 "알겠어요"
+    $('installLater').textContent = (kind === 'ios' || kind === 'inapp-ios') ? '알겠어요' : '나중에 할게요';
+    if (kind === 'android') {
+      title.textContent = '택스박스를 설치할까요?';
+      body.innerHTML = '<p>휴대폰 바탕화면에 아이콘이 생겨서<br>다음부터 앱처럼 바로 열 수 있어요.</p>';
+      go.textContent = '설치하기';
+      go.dataset.action = 'install';
+      go.classList.remove('hidden');
+    } else if (kind === 'ios') {
+      title.textContent = '바탕화면에 놓아두세요';
+      body.innerHTML = '<p>아이폰은 아래 순서대로 한 번만 해 주세요.</p><ol>' +
+        '<li><span>화면의 <b>공유 버튼(□↑)</b>을 누르세요.<br><small>안 보이면 <b>⋯</b> 버튼을 먼저 누르세요.</small></span></li>' +
+        '<li><span><b>"홈 화면에 추가"</b>를 누르세요.</span></li>' +
+        '<li><span>오른쪽 위 <b>"추가"</b>를 누르면 끝이에요.</span></li></ol>';
+    } else if (kind === 'inapp-android') {
+      title.textContent = '크롬에서 열어 주세요';
+      body.innerHTML = '<p>지금 화면에서는 설치가 안 돼요.<br>아래 버튼을 누르면 크롬에서 다시 열려요.</p>';
+      go.textContent = '크롬으로 열기';
+      go.dataset.action = 'chrome';
+      go.classList.remove('hidden');
+    } else if (kind === 'inapp-ios') {
+      title.textContent = '사파리에서 열어 주세요';
+      body.innerHTML = '<p>지금 화면에서는 설치가 안 돼요.</p><ol>' +
+        '<li><span>화면 아래나 위의 <b>⋯</b> 또는 <b>공유</b> 버튼을 누르세요.</span></li>' +
+        '<li><span><b>"Safari로 열기"</b>(또는 "다른 브라우저로 열기")를 누르세요.</span></li></ol>';
+    }
+    $('installSheet').classList.remove('hidden');
+  }
+
+  function closeInstallSheet() {
+    $('installSheet').classList.add('hidden');
+  }
+
+  $('installGo').addEventListener('click', async () => {
+    if ($('installGo').dataset.action === 'chrome') {
+      const target = location.href.replace(/^https?:\/\//, '');
+      location.href = 'intent://' + target + '#Intent;scheme=https;package=com.android.chrome;end';
+      return;
+    }
     if (!installEvent) return;
     installEvent.prompt();
     await installEvent.userChoice;
     installEvent = null;
     $('installBox').classList.add('hidden');
+    closeInstallSheet();
   });
-  window.addEventListener('appinstalled', () => $('installBox').classList.add('hidden'));
-  if (!isStandalone && /iphone|ipad|ipod/i.test(navigator.userAgent)) {
-    $('iosInstall').classList.remove('hidden');
+  $('installLater').addEventListener('click', () => {
+    save(LATER_KEY, String(Date.now()));
+    closeInstallSheet();
+  });
+
+  // 안드로이드 크롬·삼성 인터넷: 설치할 수 있을 때 알려주는 신호를 받으면 바로 안내 창
+  window.addEventListener('beforeinstallprompt', (e) => {
+    e.preventDefault();
+    installEvent = e;
+    $('installBox').classList.remove('hidden');
+    if (!laterRecently()) openInstallSheet('android');
+  });
+  $('installBtn').addEventListener('click', () => openInstallSheet('android'));
+  window.addEventListener('appinstalled', () => {
+    $('installBox').classList.add('hidden');
+    closeInstallSheet();
+  });
+
+  if (!isStandalone) {
+    if (isInApp && !laterRecently()) {
+      openInstallSheet(isIOS ? 'inapp-ios' : 'inapp-android');
+    } else if (isIOS) {
+      $('iosInstall').classList.remove('hidden');
+      if (!laterRecently()) openInstallSheet('ios');
+    }
   }
 
   if ('serviceWorker' in navigator && location.protocol.startsWith('http')) {
