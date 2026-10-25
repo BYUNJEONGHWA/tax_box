@@ -10,11 +10,11 @@
 <link rel="apple-touch-icon" href="icons/apple-touch-icon.png">
 <meta name="apple-mobile-web-app-capable" content="yes">
 <meta name="mobile-web-app-capable" content="yes">
-<meta name="apple-mobile-web-app-title" content="택스박스">
-<title>택스박스</title>
+<meta name="apple-mobile-web-app-title" content="세금콕">
+<title>세금콕</title>
 <script>
   // 저장된 글씨 크기를 화면이 그려지기 전에 적용 (깜빡임 방지)
-  try { document.documentElement.dataset.size = localStorage.getItem('taxbox-size') || '1'; } catch (e) {}
+  try { document.documentElement.dataset.size = localStorage.getItem('taxkok-size') || '1'; } catch (e) {}
 
   // 카카오톡 안에서 열면 앱 설치가 안 되므로, 바로 휴대폰 기본 브라우저(크롬·사파리)로 다시 엽니다.
   if (/KAKAOTALK/i.test(navigator.userAgent)) {
@@ -288,7 +288,7 @@
 </head>
 <body>
 <header>
-  <h1>택스박스</h1>
+  <h1>세금콕</h1>
   <button id="settingsBtn" class="head-btn">글씨 크기</button>
   <button id="homeBtn" class="head-btn hidden">처음으로</button>
 </header>
@@ -356,7 +356,7 @@
     </button>
 
     <div id="installBox" class="install hidden">
-      <p><b>휴대폰 바탕화면에 택스박스를 놓아두세요.</b><br>다음부터 앱처럼 바로 열 수 있어요.</p>
+      <p><b>휴대폰 바탕화면에 세금콕을 놓아두세요.</b><br>다음부터 앱처럼 바로 열 수 있어요.</p>
       <button id="installBtn" class="btn btn-primary">바탕화면에 설치하기</button>
     </div>
     <div id="iosInstall" class="install hidden">
@@ -802,7 +802,7 @@
     try { localStorage.setItem(key, value); } catch (e) {}
   }
 
-  let padMode = load('taxbox-pad', 'big');
+  let padMode = load('taxkok-pad', 'big');
 
   function applySettings() {
     const size = document.documentElement.dataset.size || '1';
@@ -821,14 +821,14 @@
   document.querySelectorAll('.seg.size button').forEach((b) => {
     b.addEventListener('click', () => {
       document.documentElement.dataset.size = b.dataset.size;
-      save('taxbox-size', b.dataset.size);
+      save('taxkok-size', b.dataset.size);
       applySettings();
     });
   });
   document.querySelectorAll('.seg.pad button').forEach((b) => {
     b.addEventListener('click', () => {
       padMode = b.dataset.pad;
-      save('taxbox-pad', padMode);
+      save('taxkok-pad', padMode);
       applySettings();
     });
   });
@@ -920,7 +920,7 @@
   const isAndroid = /android/i.test(ua);
   // 카카오톡 말고도 앱 안에서 열리는 브라우저 (네이버, 인스타그램, 페이스북, 라인, 밴드, 다음)
   const isInApp = /KAKAOTALK|NAVER\(inapp|Instagram|FBAN|FBAV|Line\/|BAND\/|DaumApps/i.test(ua);
-  const LATER_KEY = 'taxbox-install-later';
+  const LATER_KEY = 'taxkok-install-later';
   const LATER_DAYS = 3;
   let installEvent = null;
 
@@ -935,7 +935,7 @@
     // 아이폰은 이 창을 닫아야 공유 버튼을 누를 수 있으므로 "알겠어요"
     $('installLater').textContent = (kind === 'ios' || kind === 'inapp-ios') ? '알겠어요' : '나중에 할게요';
     if (kind === 'android') {
-      title.textContent = '택스박스를 설치할까요?';
+      title.textContent = '세금콕을 설치할까요?';
       body.innerHTML = '<p>휴대폰 바탕화면에 아이콘이 생겨서<br>다음부터 앱처럼 바로 열 수 있어요.</p>';
       go.textContent = '설치하기';
       go.dataset.action = 'install';
