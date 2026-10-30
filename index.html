@@ -333,10 +333,32 @@
   .form-scroll.zoom .form-img { width: 820px; }
   .form-img img { display: block; width: 100%; height: auto; }
   .fspot {
-    position: absolute; padding: 0; border-radius: 3px;
+    position: absolute; padding: 0; border-radius: 3px; pointer-events: none; /* 누르기는 그림 전체가 받음 */
     border: 1px solid rgba(29,78,216,0.35); background: rgba(29,78,216,0.07);
   }
   .fspot:hover, .fspot.on { background: rgba(29,78,216,0.25); border-color: var(--primary); }
+
+  .form-img { cursor: pointer; }
+
+  /* 근처 칸 고르기: 누른 부분 확대 그림 + 번호 */
+  .pick-zoom {
+    position: relative; overflow: hidden; max-width: 100%; margin: 0 auto 12px;
+    border: 1px solid var(--line); border-radius: 10px;
+    background-color: #fff; background-repeat: no-repeat;
+  }
+  .pick-zoom span {
+    position: absolute; border: 2px solid var(--primary); border-radius: 4px; background: rgba(29,78,216,0.08);
+  }
+  .pick-zoom span i {
+    position: absolute; left: -26px; top: 50%; transform: translateY(-50%);
+    width: 22px; height: 22px; border-radius: 50%; background: var(--primary); color: #fff;
+    font-style: normal; font-size: 13px; font-weight: 800; display: flex; align-items: center; justify-content: center;
+  }
+  .form-list .pick-no {
+    flex: none; width: 1.6em; height: 1.6em; border-radius: 50%; background: var(--primary); color: #fff;
+    font-size: 0.85rem; font-weight: 800; display: inline-flex; align-items: center; justify-content: center;
+  }
+  #pickList { margin-bottom: 4px; }
 
   /* 항목 목록 (그림이 작아 누르기 어려울 때) */
   /* 처음엔 닫혀 있고 눌러서 펼침 */
@@ -612,6 +634,16 @@
     <p id="fsheetBody" class="fsheet-body"></p>
     <div id="fsheetExample" class="fsheet-example hidden"></div>
     <button id="fsheetClose" class="btn btn-primary">확인</button>
+  </div>
+</div>
+
+<!-- 누른 곳 근처 칸 고르기 (칸이 촘촘해서 손가락으로 하나만 누르기 어려울 때) -->
+<div id="pickSheet" class="sheet-back hidden">
+  <div class="sheet fsheet-inner" role="dialog" aria-modal="true" aria-labelledby="pickTitle">
+    <p id="pickTitle" class="fsheet-title">어느 칸이 궁금하세요?</p>
+    <div id="pickZoom" class="pick-zoom"></div>
+    <div id="pickList" class="form-list"></div>
+    <button id="pickClose" class="btn btn-ghost">닫기</button>
   </div>
 </div>
 
@@ -1754,6 +1786,63 @@
   $('fsheetClose').addEventListener('click', closeFormSheet);
   $('formSheet').addEventListener('click', (e) => { if (e.target === $('formSheet')) closeFormSheet(); });
 
+  // 누른 곳 근처 칸 찾기. 화면에서 위아래·옆으로 8px 여유를 두고 닿는 칸을 모음
+  // 하나뿐이면 바로 설명, 여러 개면 확대 그림과 함께 고르게 함
+  function pickNear(page, img, e) {
+    const r = img.getBoundingClientRect();
+    const k = page.w / r.width; // 화면 1px = 그림 몇 px
+    const x = (e.clientX - r.left) * k, y = (e.clientY - r.top) * k;
+    const pad = 8 * k;
+    const onlyMine = $('formPages').classList.contains('only-mine');
+    const found = new Map();
+    page.spots.forEach(([key, x1, y1, x2, y2]) => {
+      if (onlyMine && FORM_TERMS[key].blank) return;
+      const dx = Math.max(x1 - x, 0, x - x2), dy = Math.max(y1 - y, 0, y - y2);
+      if (dx > pad || dy > pad) return;
+      const d = Math.hypot(dx, dy);
+      const prev = found.get(key);
+      if (!prev || d < prev.d) found.set(key, { key, d, box: [x1, y1, x2, y2] });
+    });
+    const near = [...found.values()].sort((a, b) => a.d - b.d).slice(0, 4);
+    if (!near.length) return;
+    if (near.length === 1) { openFormSheet(near[0].key); return; }
+    near.sort((a, b) => a.box[1] - b.box[1] || a.box[0] - b.box[0]); // 신고서에 적힌 순서대로
+    openPickSheet(page, near);
+  }
+
+  function openPickSheet(page, near) {
+    $('pickList').innerHTML = '';
+    near.forEach((n, i) => {
+      const t = FORM_TERMS[n.key];
+      const b = document.createElement('button');
+      b.innerHTML = '<span class="pick-no">' + (i + 1) + '</span><span class="no">' + (t.no || '') + '</span><span>' + t.title + '</span>';
+      b.addEventListener('click', () => { $('pickSheet').classList.add('hidden'); openFormSheet(n.key); });
+      $('pickList').appendChild(b);
+    });
+    $('pickSheet').classList.remove('hidden');
+
+    // 확대 그림: 칸 이름이 있는 왼쪽 부분을 크게 잘라 보여줌 (높이는 240px까지)
+    const zoom = $('pickZoom');
+    const left = Math.max(0, Math.min(...near.map((n) => n.box[0])) - 24); // 왼쪽 여백에 번호를 둠
+    const right = Math.min(Math.max(...near.map((n) => n.box[2])) + 8, left + 240);
+    const top = Math.max(0, Math.min(...near.map((n) => n.box[1])) - 8);
+    const bottom = Math.min(page.h, Math.max(...near.map((n) => n.box[3])) + 8);
+    zoom.style.width = '';
+    const s = Math.min(zoom.clientWidth / (right - left), 240 / (bottom - top));
+    zoom.style.width = (right - left) * s + 'px';
+    zoom.style.height = (bottom - top) * s + 'px';
+    zoom.style.backgroundImage = 'url("' + page.img + '")';
+    zoom.style.backgroundSize = page.w * s + 'px auto';
+    zoom.style.backgroundPosition = -left * s + 'px ' + -top * s + 'px';
+    zoom.innerHTML = near.map((n, i) => {
+      const [x1, y1, x2, y2] = n.box;
+      return '<span style="left:' + (x1 - left) * s + 'px;top:' + (y1 - top) * s + 'px;width:' + (x2 - x1) * s +
+        'px;height:' + (y2 - y1) * s + 'px"><i>' + (i + 1) + '</i></span>';
+    }).join('');
+  }
+  $('pickClose').addEventListener('click', () => $('pickSheet').classList.add('hidden'));
+  $('pickSheet').addEventListener('click', (e) => { if (e.target === $('pickSheet')) $('pickSheet').classList.add('hidden'); });
+
   // 신고서 한 장 = 그림 + 누르는 칸 + 항목 목록
   Object.entries(FORM_PAGES).forEach(([id, page]) => {
     const box = document.createElement('div');
@@ -1775,7 +1864,8 @@
       spot.style.top = (y1 / page.h * 100) + '%';
       spot.style.width = ((x2 - x1) / page.w * 100) + '%';
       spot.style.height = ((y2 - y1) / page.h * 100) + '%';
-      spot.addEventListener('click', () => openFormSheet(key));
+      // 손가락으로 누르면 그림 전체가 받고(pickNear), 이건 키보드로 고를 때만 쓰임
+      spot.addEventListener('click', (e) => { e.stopPropagation(); openFormSheet(key); });
       img.appendChild(spot);
 
       if (listed.has(key)) return;
@@ -1787,6 +1877,7 @@
       item.addEventListener('click', () => openFormSheet(key));
       list.appendChild(item);
     });
+    img.addEventListener('click', (e) => pickNear(page, img, e));
     const count = box.querySelector('.form-list-title small');
     count.dataset.all = listed.size;
     count.dataset.mine = [...listed].filter((key) => !FORM_TERMS[key].blank).length;
