@@ -279,6 +279,17 @@
   .step .ext { margin-top: 12px; text-align: center; text-decoration: none; }
   .warn-text { color: var(--warn); font-weight: 700; }
 
+  /* 이번 달 세금계산서 발급 기한 */
+  .deadline {
+    background: var(--primary); color: #fff; border-radius: 16px; padding: 18px 20px; margin-bottom: 22px;
+    font-size: 1.1rem; font-weight: 600; box-shadow: 0 6px 16px rgba(29,78,216,0.25);
+  }
+  .deadline p { margin: 0; }
+  .deadline p + p { margin-top: 8px; }
+  .deadline b { color: #fff; font-weight: 800; }
+  .deadline .due { background: #fde047; color: var(--text); border-radius: 6px; padding: 0 6px; white-space: nowrap; }
+  .deadline .tip { color: rgba(255,255,255,0.85); font-size: 0.9rem; font-weight: 500; }
+
   /* 수정세금계산서 */
   .menu-sub { font-size: 1.1rem; font-weight: 800; margin: 28px 4px 12px; color: var(--muted); }
   .fix-sum { margin: 4px 0 0; }
@@ -455,6 +466,7 @@
 
   <!-- 세금계산서 발행하기: 계산 방법 고르기 -->
   <section id="screen-invoice" class="hidden">
+    <div id="deadlineBox" class="deadline"></div>
     <p class="home-q">무엇으로 계산할까요?</p>
 
     <button class="mode" data-go="deposit">
@@ -1081,6 +1093,51 @@
     if (ok) renderFix(id);
   }
 
+  // ---- 세금계산서 발급 기한 (다음 달 10일, 토·일·공휴일이면 그다음 날) ----
+  // 국세기본법 제5조: 기한이 토요일·일요일·공휴일·근로자의 날이면 그다음 날까지
+  // 공휴일(대체공휴일 포함)은 해마다 이어서 적어 주세요. 목록에 없는 해는 토·일만 따집니다.
+  const HOLIDAYS = new Set([
+    '2026-01-01', '2026-02-16', '2026-02-17', '2026-02-18', '2026-03-02', '2026-05-01', '2026-05-05',
+    '2026-05-25', '2026-06-03', '2026-08-17', '2026-09-24', '2026-09-25', '2026-09-26', '2026-10-05',
+    '2026-10-09', '2026-12-25',
+    '2027-01-01', '2027-02-06', '2027-02-07', '2027-02-08', '2027-02-09', '2027-03-01', '2027-05-01',
+    '2027-05-05', '2027-05-13', '2027-08-16', '2027-09-14', '2027-09-15', '2027-09-16', '2027-10-04',
+    '2027-10-11', '2027-12-27',
+  ]);
+  const WEEKDAYS = ['일', '월', '화', '수', '목', '금', '토'];
+  const ymd = (d) => d.getFullYear() + '-' + String(d.getMonth() + 1).padStart(2, '0') + '-' + String(d.getDate()).padStart(2, '0');
+  const isOff = (d) => d.getDay() === 0 || d.getDay() === 6 || HOLIDAYS.has(ymd(d));
+  const md = (d) => (d.getMonth() + 1) + '월 ' + d.getDate() + '일(' + WEEKDAYS[d.getDay()] + ')';
+
+  // month(0부터)분 세금계산서의 발급 기한
+  function invoiceDeadline(year, month) {
+    const tenth = new Date(year, month + 1, 10);
+    const due = new Date(tenth);
+    while (isOff(due)) due.setDate(due.getDate() + 1);
+    return { tenth, due };
+  }
+
+  function deadlineLine(year, month, lead) {
+    const { tenth, due } = invoiceDeadline(year, month);
+    const label = new Date(year, month, 1).getMonth() + 1; // 1월에 지난달을 물으면 12월
+    const moved = due.getDate() !== 10;
+    const why = tenth.getDay() === 6 ? '토요일' : tenth.getDay() === 0 ? '일요일' : '공휴일';
+    return '<p>' + lead + '<b>' + label + '월분</b> 세금계산서는 <b class="due">' + md(due) + '까지</b> 발급하세요.</p>' +
+      (moved ? '<p class="tip">' + (tenth.getMonth() + 1) + '월 10일이 ' + why + '이라 그다음 평일까지예요.</p>' : '');
+  }
+
+  function renderDeadline() {
+    const today = new Date();
+    const y = today.getFullYear(), m = today.getMonth();
+    let html = '<p class="tip">오늘은 ' + md(today) + '이에요.</p>';
+    // 아직 지난달 기한 전이면 지난달 것부터 알려 줌
+    const prev = invoiceDeadline(y, m - 1).due;
+    prev.setDate(prev.getDate() + 1); // 기한 당일까지 포함
+    if (today < prev) html += deadlineLine(y, m - 1, '아직 안 끊은 ');
+    html += deadlineLine(y, m, '');
+    $('deadlineBox').innerHTML = html;
+  }
+
   // ---- 화면 이동 (휴대폰 뒤로가기 버튼도 동작) ----
   const SCREENS = ['home', 'invoice', 'deposit', 'unit', 'guide', 'form', 'fix'];
   function route() {
@@ -1088,6 +1145,7 @@
     let [screen, sub] = location.hash.replace('#', '').split('/');
     if (!SCREENS.includes(screen)) screen = 'home';
     if (screen === 'fix') showFix(sub);
+    if (screen === 'invoice') renderDeadline();
     if (screen === 'guide') {
       if (!guideData) { location.replace('#'); return; }
       renderGuide(guideData);
