@@ -1819,10 +1819,10 @@
     return [...found.values()].sort((a, b) => a.d - b.d).slice(0, 4);
   }
 
-  // 손가락을 대거나 마우스를 올리면 근처 칸에 불이 들어옴
+  // 손가락을 대거나 마우스를 올리면 가장 가까운 칸 하나에만 불이 들어옴
   function lightNear(img, near) {
-    const keys = new Set(near.map((n) => n.key));
-    img.querySelectorAll('.fspot').forEach((s) => s.classList.toggle('hot', keys.has(s.dataset.key)));
+    const key = near.length ? near[0].key : null;
+    img.querySelectorAll('.fspot').forEach((s) => s.classList.toggle('hot', s.dataset.key === key));
   }
   function clearHot() {
     document.querySelectorAll('.fspot.hot').forEach((s) => s.classList.remove('hot'));
@@ -1831,7 +1831,9 @@
   function pickNear(page, img, e) {
     const near = nearSpots(page, img, e);
     if (!near.length) { clearHot(); return; }
-    if (near.length === 1) { openFormSheet(near[0].key); return; }
+    // 칸 안을 눌렀고 선(다른 칸)에서 화면 3px 넘게 떨어져 있으면 그 칸을 바로 엶
+    const edge = 3 * page.w / img.getBoundingClientRect().width;
+    if (near.length === 1 || (near[0].d === 0 && near[1].d > edge)) { openFormSheet(near[0].key); return; }
     near.sort((a, b) => a.box[1] - b.box[1] || a.box[0] - b.box[0]); // 신고서에 적힌 순서대로
     openPickSheet(page, near);
   }
