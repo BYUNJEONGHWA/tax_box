@@ -336,7 +336,7 @@
     position: absolute; padding: 0; border-radius: 3px; pointer-events: none; /* 누르기는 그림 전체가 받음 */
     border: 1px solid rgba(29,78,216,0.35); background: rgba(29,78,216,0.07);
   }
-  .fspot:hover, .fspot.on { background: rgba(29,78,216,0.25); border-color: var(--primary); }
+  .fspot.hot, .fspot.on { background: rgba(29,78,216,0.25); border-color: var(--primary); }
 
   .form-img { cursor: pointer; }
 
@@ -1787,19 +1787,21 @@
     $('fsheetBody').innerHTML = t.body.replace(/\n/g, '<br>');
     $('fsheetExample').innerHTML = t.example || '';
     $('fsheetExample').classList.toggle('hidden', !t.example);
+    clearHot();
     document.querySelectorAll('.fspot').forEach((s) => s.classList.toggle('on', s.dataset.key === key));
     $('formSheet').classList.remove('hidden');
   }
   function closeFormSheet() {
     $('formSheet').classList.add('hidden');
     document.querySelectorAll('.fspot.on').forEach((s) => s.classList.remove('on'));
+    clearHot();
   }
   $('fsheetClose').addEventListener('click', closeFormSheet);
   $('formSheet').addEventListener('click', (e) => { if (e.target === $('formSheet')) closeFormSheet(); });
 
   // 누른 곳 근처 칸 찾기. 화면에서 위아래·옆으로 8px 여유를 두고 닿는 칸을 모음
   // 하나뿐이면 바로 설명, 여러 개면 확대 그림과 함께 고르게 함
-  function pickNear(page, img, e) {
+  function nearSpots(page, img, e) {
     const r = img.getBoundingClientRect();
     const k = page.w / r.width; // 화면 1px = 그림 몇 px
     const x = (e.clientX - r.left) * k, y = (e.clientY - r.top) * k;
@@ -1814,8 +1816,21 @@
       const prev = found.get(key);
       if (!prev || d < prev.d) found.set(key, { key, d, box: [x1, y1, x2, y2] });
     });
-    const near = [...found.values()].sort((a, b) => a.d - b.d).slice(0, 4);
-    if (!near.length) return;
+    return [...found.values()].sort((a, b) => a.d - b.d).slice(0, 4);
+  }
+
+  // 손가락을 대거나 마우스를 올리면 근처 칸에 불이 들어옴
+  function lightNear(img, near) {
+    const keys = new Set(near.map((n) => n.key));
+    img.querySelectorAll('.fspot').forEach((s) => s.classList.toggle('hot', keys.has(s.dataset.key)));
+  }
+  function clearHot() {
+    document.querySelectorAll('.fspot.hot').forEach((s) => s.classList.remove('hot'));
+  }
+
+  function pickNear(page, img, e) {
+    const near = nearSpots(page, img, e);
+    if (!near.length) { clearHot(); return; }
     if (near.length === 1) { openFormSheet(near[0].key); return; }
     near.sort((a, b) => a.box[1] - b.box[1] || a.box[0] - b.box[0]); // 신고서에 적힌 순서대로
     openPickSheet(page, near);
@@ -1852,8 +1867,9 @@
         'px;height:' + (y2 - y1) * s + 'px"><i>' + (i + 1) + '</i></span>';
     }).join('');
   }
-  $('pickClose').addEventListener('click', () => $('pickSheet').classList.add('hidden'));
-  $('pickSheet').addEventListener('click', (e) => { if (e.target === $('pickSheet')) $('pickSheet').classList.add('hidden'); });
+  function closePickSheet() { $('pickSheet').classList.add('hidden'); clearHot(); }
+  $('pickClose').addEventListener('click', closePickSheet);
+  $('pickSheet').addEventListener('click', (e) => { if (e.target === $('pickSheet')) closePickSheet(); });
 
   // 신고서 한 장 = 그림 + 누르는 칸 + 항목 목록
   Object.entries(FORM_PAGES).forEach(([id, page]) => {
@@ -1890,6 +1906,10 @@
       list.appendChild(item);
     });
     img.addEventListener('click', (e) => pickNear(page, img, e));
+    img.addEventListener('pointerdown', (e) => lightNear(img, nearSpots(page, img, e)));
+    img.addEventListener('pointermove', (e) => { if (e.pointerType === 'mouse') lightNear(img, nearSpots(page, img, e)); });
+    img.addEventListener('pointerleave', (e) => { if (e.pointerType === 'mouse') clearHot(); });
+    img.addEventListener('pointercancel', clearHot); // 끌어서 내리거나 두 손가락으로 확대하면 끔
     const count = box.querySelector('.form-list-title small');
     count.dataset.all = listed.size;
     count.dataset.mine = [...listed].filter((key) => !FORM_TERMS[key].blank).length;
