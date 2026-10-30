@@ -279,6 +279,15 @@
   .step .ext { margin-top: 12px; text-align: center; text-decoration: none; }
   .warn-text { color: var(--warn); font-weight: 700; }
 
+  /* 수정세금계산서 */
+  .menu-sub { font-size: 1.1rem; font-weight: 800; margin: 28px 4px 12px; color: var(--muted); }
+  .fix-sum { margin: 4px 0 0; }
+  .fix-sum div { display: flex; gap: 12px; padding: 10px 0; border-bottom: 1px solid var(--line); }
+  .fix-sum div:last-child { border-bottom: 0; }
+  .fix-sum dt { flex: none; width: 5.2em; color: var(--muted); font-weight: 700; }
+  .fix-sum dd { margin: 0; font-weight: 700; }
+  .fix-sum b { color: var(--primary-dark); }
+
   footer { text-align: center; color: var(--muted); font-size: 0.85rem; padding: 0 16px 32px; }
 
   /* ===== 부가세 신고서 읽기 ===== */
@@ -296,10 +305,14 @@
   .page-tab.on { color: var(--primary); border-bottom-color: var(--primary); }
   .form-hint { color: var(--muted); font-size: 0.95rem; margin: 0 4px 10px; }
   .form-hint b { color: var(--primary); }
+  .form-tools { display: flex; flex-wrap: wrap; justify-content: flex-end; gap: 8px; margin-bottom: 10px; }
   .zoom-btn {
-    display: block; margin: 0 0 10px auto; border: 1px solid var(--line-strong); background: var(--card);
+    border: 1px solid var(--line-strong); background: var(--card);
     color: var(--primary); border-radius: 10px; padding: 6px 12px; font-size: 0.95rem; font-weight: 700;
   }
+  .zoom-btn.on { border-color: var(--primary); background: var(--primary); color: #fff; }
+  /* 내가 적을 칸만 보기: 해당자만 적는 칸은 숨김 */
+  .only-mine .is-blank { display: none !important; }
 
   /* 신고서 그림. 크게 보기면 옆으로 밀어서 봄 */
   .form-scroll {
@@ -315,8 +328,17 @@
   .fspot:hover, .fspot.on { background: rgba(29,78,216,0.25); border-color: var(--primary); }
 
   /* 항목 목록 (그림이 작아 누르기 어려울 때) */
-  .form-list-title { font-size: 1.1rem; font-weight: 800; margin: 22px 4px 8px; }
-  .form-list { background: var(--card); border: 1px solid var(--line); border-radius: 16px; overflow: hidden; }
+  /* 처음엔 닫혀 있고 눌러서 펼침 */
+  .form-list-box { margin-top: 16px; background: var(--card); border: 1px solid var(--line); border-radius: 16px; overflow: hidden; }
+  .form-list-title {
+    display: flex; align-items: center; gap: 8px; padding: 16px; cursor: pointer;
+    font-size: 1.1rem; font-weight: 800; list-style: none;
+  }
+  .form-list-title::-webkit-details-marker { display: none; }
+  .form-list-title small { color: var(--muted); font-size: 0.9rem; font-weight: 600; }
+  .form-list-title .chevron { transform: rotate(135deg); margin-top: -4px; }
+  .form-list-box[open] .form-list-title { border-bottom: 1px solid var(--line); }
+  .form-list-box[open] .form-list-title .chevron { transform: rotate(-45deg); margin-top: 4px; }
   .form-list button {
     display: flex; align-items: baseline; gap: 10px; width: 100%; text-align: left;
     border: 0; border-bottom: 1px solid var(--line); background: transparent;
@@ -404,20 +426,12 @@
 <main>
   <!-- 처음 화면 -->
   <section id="screen-home">
-    <p class="home-q">무엇으로 계산할까요?</p>
+    <p class="home-q">무엇을 할까요?</p>
 
-    <button class="mode" data-go="deposit">
+    <button class="mode" data-go="invoice">
       <span>
-        <b>통장에 들어온 돈으로</b>
-        <small>거래처가 입금한 금액을 알 때</small>
-      </span>
-      <span class="chevron" aria-hidden="true"></span>
-    </button>
-
-    <button class="mode" data-go="unit">
-      <span>
-        <b>단가 × 수량으로</b>
-        <small>하나에 얼마, 몇 개인지 알 때</small>
+        <b>세금계산서 발행하기</b>
+        <small>공급가액·세액을 계산하고 발급 방법 보기</small>
       </span>
       <span class="chevron" aria-hidden="true"></span>
     </button>
@@ -437,6 +451,36 @@
     <div id="iosInstall" class="install hidden">
       <p><b>휴대폰 바탕화면에 놓아두려면</b><br>아래쪽 <b>공유 버튼(□↑)</b>을 누르고<br><b>"홈 화면에 추가"</b>를 누르세요.</p>
     </div>
+  </section>
+
+  <!-- 세금계산서 발행하기: 계산 방법 고르기 -->
+  <section id="screen-invoice" class="hidden">
+    <p class="home-q">무엇으로 계산할까요?</p>
+
+    <button class="mode" data-go="deposit">
+      <span>
+        <b>통장에 들어온 돈으로</b>
+        <small>거래처가 입금한 금액을 알 때</small>
+      </span>
+      <span class="chevron" aria-hidden="true"></span>
+    </button>
+
+    <button class="mode" data-go="unit">
+      <span>
+        <b>단가 × 수량으로</b>
+        <small>하나에 얼마, 몇 개인지 알 때</small>
+      </span>
+      <span class="chevron" aria-hidden="true"></span>
+    </button>
+
+    <p class="menu-sub">이미 발급했는데 잘못됐나요?</p>
+    <button class="mode" data-go="fix">
+      <span>
+        <b>수정세금계산서 발급하기</b>
+        <small>금액이 바뀌었거나, 반품·취소됐거나, 잘못 적었을 때</small>
+      </span>
+      <span class="chevron" aria-hidden="true"></span>
+    </button>
   </section>
 
   <!-- 통장 입금액으로 계산 -->
@@ -511,6 +555,25 @@
     <button class="btn btn-ghost guide-back">← 계산 화면으로 돌아가기</button>
   </section>
 
+  <!-- 수정세금계산서 발급 안내 -->
+  <section id="screen-fix" class="hidden">
+    <div id="fixPick">
+      <p class="title">수정세금계산서 발급하기</p>
+      <p class="guide-intro">무엇이 잘못됐나요? 해당하는 것을 누르세요.</p>
+      <div id="fixCases"></div>
+      <p class="guide-intro">내국신용장을 나중에 받았거나 세율(10%, 0%)을 잘못 적은 경우는 국세상담센터(126)나 세무사에게 물어보세요.</p>
+    </div>
+    <div id="fixGuide" class="hidden">
+      <button class="back-link" id="fixBack">← 다른 경우 고르기</button>
+      <p class="title" id="fixTitle"></p>
+      <div class="seg where">
+        <button data-where="sontax">휴대폰<small>손택스 앱</small></button>
+        <button data-where="hometax">컴퓨터<small>홈택스</small></button>
+      </div>
+      <div id="fixSteps"></div>
+    </div>
+  </section>
+
   <!-- 부가세 신고서 읽기 -->
   <section id="screen-form" class="hidden">
     <p class="title">부가세 신고서 읽기</p>
@@ -520,7 +583,10 @@
     </div>
     <div id="pageTabs" class="page-tabs"></div>
     <p class="form-hint">신고서의 <b>파란 칸</b>이나 아래 <b>항목 목록</b>을 누르면 쉬운 설명이 나와요.</p>
-    <button id="zoomBtn" class="zoom-btn">그림 크게 보기</button>
+    <div class="form-tools">
+      <button id="mineBtn" class="zoom-btn">내가 적을 칸만 보기</button>
+      <button id="zoomBtn" class="zoom-btn">그림 크게 보기</button>
+    </div>
     <div id="formPages"></div>
   </section>
 </main>
@@ -808,12 +874,25 @@
     b.addEventListener('click', () => {
       guideWhere = b.dataset.where;
       save('taxkok-where', guideWhere);
-      renderGuide(guideData);
+      if (location.hash.startsWith('#fix/')) renderFix(location.hash.slice(5));
+      else renderGuide(guideData);
     });
   });
 
   function step(n, title, body) {
     return '<div class="card step"><h3><span class="num">' + n + '</span>' + title + '</h3>' + body + '</div>';
+  }
+
+  function loginStep(n, sontax) {
+    return sontax
+      ? step(n, '손택스에 로그인',
+          '<p>휴대폰에서 <b>손택스</b> 앱을 열고 로그인하세요.</p>' +
+          '<p class="tip">간편인증이나 지문·얼굴 인식으로 로그인할 수 있어요.</p>' +
+          '<p class="tip">앱이 없으면 Play 스토어나 App Store에서 <b>"손택스"</b>를 찾아 설치하세요.</p>')
+      : step(n, '홈택스에 로그인',
+          '<p>인터넷에서 <b>홈택스</b>를 열고 로그인하세요.</p>' +
+          '<p class="tip">사업자 간편인증이나 공동인증서로 로그인할 수 있어요.</p>' +
+          '<a class="btn btn-ghost ext" href="https://www.hometax.go.kr" target="_blank" rel="noopener">홈택스 열기</a>');
   }
 
   function field(label, sub, value, unit) {
@@ -855,23 +934,15 @@
         '<p class="tip">통장으로 모두 받으셨다면 보통 <b>영수</b>예요.</p>'
       : '<p>돈을 이미 받았으면 <b>영수</b>, 아직 받지 않았으면 <b>청구</b>를 고르세요.</p>';
 
-    const start = sontax
-      ? step(++n, '손택스에 로그인',
-          '<p>휴대폰에서 <b>손택스</b> 앱을 열고 로그인하세요.</p>' +
-          '<p class="tip">간편인증이나 지문·얼굴 인식으로 로그인할 수 있어요.</p>' +
-          '<p class="tip">앱이 없으면 Play 스토어나 App Store에서 <b>"손택스"</b>를 찾아 설치하세요.</p>') +
-        step(++n, '발급 화면 찾기',
+    const start = loginStep(++n, sontax) + (sontax
+      ? step(++n, '발급 화면 찾기',
           '<p>첫 화면에서 <b>[전자(세금)계산서 발급]</b>을 누르세요.</p>' +
           '<p class="tip">첫 화면에 없으면 <b>전체 메뉴(☰)</b>에서 차례로 누르세요.</p>' +
           '<div class="path"><span>전자(세금)계산서</span><i>›</i><span>발급</span><i>›</i><span>건별발급</span></div>')
-      : step(++n, '홈택스에 로그인',
-          '<p>인터넷에서 <b>홈택스</b>를 열고 로그인하세요.</p>' +
-          '<p class="tip">사업자 간편인증이나 공동인증서로 로그인할 수 있어요.</p>' +
-          '<a class="btn btn-ghost ext" href="https://www.hometax.go.kr" target="_blank" rel="noopener">홈택스 열기</a>') +
-        step(++n, '발급 화면 찾기',
+      : step(++n, '발급 화면 찾기',
           '<p>위쪽 메뉴에서 차례로 누르세요.</p>' +
           '<div class="path"><span>계산서·영수증·카드</span><i>›</i><span>전자(세금)계산서 발급</span><i>›</i><span>건별 발급</span></div>' +
-          '<p class="tip">메뉴 이름이 조금 다르면 <b>"건별 발급"</b>을 찾으세요.</p>');
+          '<p class="tip">메뉴 이름이 조금 다르면 <b>"건별 발급"</b>을 찾으세요.</p>'));
 
     $('guideSteps').innerHTML =
       start +
@@ -892,7 +963,7 @@
       step(++n, '[발급하기] 누르기',
         '<p>모두 맞으면 <b>[발급하기]</b>를 누르면 끝이에요.</p>' +
         '<p class="warn-text">발급한 계산서는 지울 수 없어요. 누르기 전에 한 번 더 확인하세요.</p>' +
-        '<p class="tip">틀린 것을 나중에 알았다면 "수정 발급"으로 고칠 수 있어요.</p>' +
+        '<p class="tip">틀린 것을 나중에 알았다면 <a href="#fix">수정세금계산서</a>로 고칠 수 있어요.</p>' +
         '<p class="tip">' + app + ' 화면은 바뀔 수 있어요. (2026년 10월 기준 안내)</p>');
     bindCopy($('guideSteps'));
   }
@@ -904,11 +975,119 @@
     });
   });
 
+  // ---- 수정세금계산서 발급 안내 ----
+  // reason: 홈택스·손택스에서 고르는 수정사유, date: 작성일자, sheets: 몇 장을 어떻게, deadline: 발급 기한
+  const FIX_CASES = {
+    price: {
+      label: '금액이 바뀌었어요', when: '값을 깎아 줬거나, 더 받기로 했을 때',
+      reason: '공급가액 변동',
+      date: '<b>금액이 바뀐 날</b> (처음 계산서 날짜가 아니에요)',
+      sheets: '<b>바뀐 만큼만 1장</b>. 줄었으면 마이너스(−), 늘었으면 플러스(+) 금액이에요.',
+      example: '예) 100만 원으로 발급했는데 10만 원을 깎아 줌 → 공급가액 −10만 원 1장',
+      deadline: '금액이 바뀐 날의 <b>다음 달 10일까지</b>'
+    },
+    return: {
+      label: '물건이 반품됐어요', when: '팔았던 물건을 일부나 전부 돌려받았을 때',
+      reason: '환입',
+      date: '<b>물건을 돌려받은 날</b>',
+      sheets: '<b>돌려받은 만큼 마이너스(−) 1장</b>',
+      example: '예) 100만 원어치 중 30만 원어치가 반품됨 → 공급가액 −30만 원 1장',
+      deadline: '돌려받은 날의 <b>다음 달 10일까지</b>'
+    },
+    cancel: {
+      label: '거래가 취소됐어요', when: '계약을 없던 일로 했을 때',
+      reason: '계약의 해제',
+      date: '<b>계약을 취소한 날</b>',
+      sheets: '처음 금액 <b>전부를 마이너스(−)로 1장</b>',
+      example: '예) 100만 원으로 발급했는데 계약이 취소됨 → 공급가액 −100만 원 1장',
+      deadline: '취소한 날의 <b>다음 달 10일까지</b>'
+    },
+    wrong: {
+      label: '잘못 적었어요', when: '금액, 거래처, 날짜, 품목 등을 틀리게 적었을 때',
+      reason: '기재사항 착오·정정',
+      date: '<b>처음 계산서와 같은 날짜</b> 그대로',
+      sheets: '<b>2장</b>이 나가요. 처음 것을 없애는 마이너스(−) 1장 + 바르게 고친 플러스(+) 1장이에요.',
+      example: '처음 계산서를 불러와서 고치면, 2장을 같이 만들어 줘요.',
+      deadline: '틀린 걸 알면 <b>바로</b> 고치세요. 부가세 신고를 한 뒤에 고치면 수정신고를 해야 할 수 있어요.'
+    },
+    double: {
+      label: '같은 걸 두 번 발급했어요', when: '실수로 한 번 더 발급했을 때',
+      reason: '착오에 의한 이중발급',
+      date: '<b>없앨 계산서와 같은 날짜</b> 그대로',
+      sheets: '<b>두 번째로 발급한 것</b>을 마이너스(−) 1장으로 없애요.',
+      example: '처음 계산서를 불러오면 마이너스 금액이 자동으로 채워져요.',
+      deadline: '알게 되면 <b>바로</b> 고치세요.'
+    },
+    exempt: {
+      label: '세금계산서를 끊으면 안 되는 거래였어요', when: '부가세가 없는 면세 물건·서비스였을 때',
+      reason: '면세 등 발급대상 아님',
+      date: '<b>처음 계산서와 같은 날짜</b> 그대로',
+      sheets: '처음 금액 <b>전부를 마이너스(−)로 1장</b>',
+      example: '면세 거래라면 세금계산서 대신 <b>계산서</b>를 새로 발급해요.',
+      deadline: '알게 되면 <b>바로</b> 고치세요.'
+    },
+  };
+
+  Object.entries(FIX_CASES).forEach(([id, c]) => {
+    const b = document.createElement('button');
+    b.className = 'mode';
+    b.innerHTML = '<span><b>' + c.label + '</b><small>' + c.when + '</small></span><span class="chevron" aria-hidden="true"></span>';
+    b.addEventListener('click', () => { location.hash = 'fix/' + id; });
+    $('fixCases').appendChild(b);
+  });
+  $('fixBack').addEventListener('click', () => history.back());
+
+  function renderFix(id) {
+    const c = FIX_CASES[id];
+    const sontax = guideWhere === 'sontax';
+    const app = sontax ? '손택스' : '홈택스';
+    $('fixTitle').textContent = c.label;
+    document.querySelectorAll('.seg.where button').forEach((b) => b.classList.toggle('on', b.dataset.where === guideWhere));
+    let n = 0;
+    $('fixSteps').innerHTML =
+      '<div class="card"><dl class="fix-sum">' +
+        '<div><dt>수정사유</dt><dd><b>' + c.reason + '</b></dd></div>' +
+        '<div><dt>작성일자</dt><dd>' + c.date + '</dd></div>' +
+        '<div><dt>발급</dt><dd>' + c.sheets + '</dd></div>' +
+        '<div><dt>언제까지</dt><dd>' + c.deadline + '</dd></div>' +
+      '</dl></div>' +
+      loginStep(++n, sontax) +
+      step(++n, '수정 발급 화면 찾기',
+        (sontax
+          ? '<p class="tip">첫 화면에 없으면 <b>전체 메뉴(☰)</b>에서 차례로 누르세요.</p>' +
+            '<div class="path"><span>전자(세금)계산서</span><i>›</i><span>발급</span><i>›</i><span>수정발급</span></div>'
+          : '<p>위쪽 메뉴에서 차례로 누르세요.</p>' +
+            '<div class="path"><span>계산서·영수증·카드</span><i>›</i><span>전자(세금)계산서 발급</span><i>›</i><span>수정(세금)계산서 발급</span></div>') +
+        '<p class="tip">메뉴 이름이 조금 다르면 <b>"수정"</b>이 들어간 메뉴를 찾으세요.</p>') +
+      step(++n, '처음 발급한 계산서 찾기',
+        '<p>처음 발급한 날짜가 들어가게 기간을 고르고 <b>[조회]</b>를 누르세요.</p>' +
+        '<p>목록에서 <b>고칠 계산서</b>를 고르세요.</p>') +
+      step(++n, '수정사유 고르기',
+        '<p>수정사유 목록에서 <b>"' + c.reason + '"</b> 항목을 누르세요.</p>') +
+      step(++n, '날짜와 금액 넣기',
+        '<p>작성일자: ' + c.date + '</p>' +
+        '<p>' + c.sheets + '</p>' +
+        '<p class="tip">' + c.example + '</p>') +
+      step(++n, '[발급하기] 누르기',
+        '<p>모두 맞으면 <b>[발급하기]</b>를 누르면 끝이에요. 거래처에도 수정된 계산서가 가요.</p>' +
+        '<p class="warn-text">언제까지: ' + c.deadline.replace(/<\/?b>/g, '') + '</p>' +
+        '<p class="tip">' + app + ' 화면은 바뀔 수 있어요. (2026년 10월 기준 안내)</p>');
+  }
+
+  function showFix(id) {
+    const ok = !!FIX_CASES[id];
+    $('fixPick').classList.toggle('hidden', ok);
+    $('fixGuide').classList.toggle('hidden', !ok);
+    if (ok) renderFix(id);
+  }
+
   // ---- 화면 이동 (휴대폰 뒤로가기 버튼도 동작) ----
-  const SCREENS = ['home', 'deposit', 'unit', 'guide', 'form'];
+  const SCREENS = ['home', 'invoice', 'deposit', 'unit', 'guide', 'form', 'fix'];
   function route() {
-    let screen = location.hash.replace('#', '');
+    // 수정세금계산서는 "fix/경우" 로 경우까지 주소에 담아서 뒤로가기로 고르는 화면에 돌아오게 함
+    let [screen, sub] = location.hash.replace('#', '').split('/');
     if (!SCREENS.includes(screen)) screen = 'home';
+    if (screen === 'fix') showFix(sub);
     if (screen === 'guide') {
       if (!guideData) { location.replace('#'); return; }
       renderGuide(guideData);
@@ -1523,14 +1702,15 @@
     box.id = 'formPage-' + id;
     box.className = 'hidden';
     box.innerHTML = '<div class="form-scroll"><div class="form-img"><img src="' + page.img + '" alt="' + page.alt + '"></div></div>' +
-      '<p class="form-list-title">항목 목록</p><div class="form-list"></div>';
+      '<details class="form-list-box"><summary class="form-list-title">항목 목록 <small></small>' +
+      '<span class="chevron" aria-hidden="true"></span></summary><div class="form-list"></div></details>';
     const img = box.querySelector('.form-img');
     const list = box.querySelector('.form-list');
     const listed = new Set();
     page.spots.forEach(([key, x1, y1, x2, y2]) => {
       const t = FORM_TERMS[key];
       const spot = document.createElement('button');
-      spot.className = 'fspot';
+      spot.className = 'fspot' + (t.blank ? ' is-blank' : '');
       spot.dataset.key = key;
       spot.setAttribute('aria-label', t.title + ' 설명 보기');
       spot.style.left = (x1 / page.w * 100) + '%';
@@ -1543,11 +1723,15 @@
       if (listed.has(key)) return;
       listed.add(key);
       const item = document.createElement('button');
+      if (t.blank) item.className = 'is-blank';
       item.innerHTML = '<span class="no">' + (t.no || '') + '</span><span>' + t.title + '</span>' +
         (t.blank ? '<span class="blank">해당자만</span>' : '');
       item.addEventListener('click', () => openFormSheet(key));
       list.appendChild(item);
     });
+    const count = box.querySelector('.form-list-title small');
+    count.dataset.all = listed.size;
+    count.dataset.mine = [...listed].filter((key) => !FORM_TERMS[key].blank).length;
     $('formPages').appendChild(box);
   });
 
@@ -1582,6 +1766,17 @@
     document.querySelectorAll('.form-scroll').forEach((s) => s.classList.toggle('zoom', zoom));
     $('zoomBtn').textContent = zoom ? '그림 작게 보기' : '그림 크게 보기';
   });
+
+  // 내가 적을 칸만 보기 (대부분 비워 두는 "해당자만" 칸을 숨김)
+  function setOnlyMine(on) {
+    $('formPages').classList.toggle('only-mine', on);
+    $('mineBtn').classList.toggle('on', on);
+    $('mineBtn').textContent = on ? '모든 칸 보기' : '내가 적을 칸만 보기';
+    document.querySelectorAll('.form-list-title small').forEach((s) => { s.textContent = (on ? s.dataset.mine : s.dataset.all) + '개'; });
+    save('taxkok-only-mine', on ? '1' : '');
+  }
+  $('mineBtn').addEventListener('click', () => setOnlyMine(!$('formPages').classList.contains('only-mine')));
+  setOnlyMine(load('taxkok-only-mine', '') === '1');
 
   // ---- 보기 설정 (글씨 크기, 숫자 넣는 방법) ----
   function load(key, fallback) {
