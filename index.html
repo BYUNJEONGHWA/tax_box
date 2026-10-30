@@ -281,10 +281,76 @@
 
   footer { text-align: center; color: var(--muted); font-size: 0.85rem; padding: 0 16px 32px; }
 
+  /* ===== 부가세 신고서 읽기 ===== */
+  .form-tabs { display: flex; gap: 8px; margin-bottom: 10px; }
+  .form-tab {
+    flex: 1; border: 2px solid var(--line-strong); background: var(--card); color: var(--muted);
+    border-radius: 12px; padding: 12px 8px; font-size: 1.1rem; font-weight: 800;
+  }
+  .form-tab.on { border-color: var(--primary); background: var(--primary-soft); color: var(--primary); }
+  .page-tabs { display: flex; gap: 8px; margin-bottom: 10px; }
+  .page-tab {
+    flex: 1; border: 0; border-bottom: 3px solid transparent; background: transparent;
+    color: var(--muted); font-size: 1rem; font-weight: 800; padding: 8px 4px;
+  }
+  .page-tab.on { color: var(--primary); border-bottom-color: var(--primary); }
+  .form-hint { color: var(--muted); font-size: 0.95rem; margin: 0 4px 10px; }
+  .form-hint b { color: var(--primary); }
+  .zoom-btn {
+    display: block; margin: 0 0 10px auto; border: 1px solid var(--line-strong); background: var(--card);
+    color: var(--primary); border-radius: 10px; padding: 6px 12px; font-size: 0.95rem; font-weight: 700;
+  }
+
+  /* 신고서 그림. 크게 보기면 옆으로 밀어서 봄 */
+  .form-scroll {
+    overflow-x: auto; border: 1px solid var(--line); border-radius: 12px; background: #fff;
+  }
+  .form-img { position: relative; }
+  .form-scroll.zoom .form-img { width: 820px; }
+  .form-img img { display: block; width: 100%; height: auto; }
+  .fspot {
+    position: absolute; padding: 0; border-radius: 3px;
+    border: 1px solid rgba(29,78,216,0.35); background: rgba(29,78,216,0.07);
+  }
+  .fspot:hover, .fspot.on { background: rgba(29,78,216,0.25); border-color: var(--primary); }
+
+  /* 항목 목록 (그림이 작아 누르기 어려울 때) */
+  .form-list-title { font-size: 1.1rem; font-weight: 800; margin: 22px 4px 8px; }
+  .form-list { background: var(--card); border: 1px solid var(--line); border-radius: 16px; overflow: hidden; }
+  .form-list button {
+    display: flex; align-items: baseline; gap: 10px; width: 100%; text-align: left;
+    border: 0; border-bottom: 1px solid var(--line); background: transparent;
+    padding: 14px 16px; font-size: 1rem; color: var(--text);
+  }
+  .form-list button:last-child { border-bottom: 0; }
+  .form-list button:hover, .form-list button:active { background: var(--primary-soft); }
+  .form-list .no { flex: none; min-width: 3.4em; color: var(--primary); font-weight: 800; }
+  .form-list .blank { margin-left: auto; flex: none; color: var(--muted); font-size: 0.85rem; }
+
+  /* 항목 설명 시트 */
+  .fsheet-inner { max-height: 85vh; overflow-y: auto; }
+  .fsheet-tag {
+    display: inline-block; background: var(--primary-soft); color: var(--primary-dark);
+    border-radius: 8px; padding: 4px 10px; font-size: 0.85rem; font-weight: 800; margin-bottom: 10px;
+  }
+  .fsheet-title { font-size: 1.35rem; font-weight: 800; margin: 0 0 12px; letter-spacing: -0.5px; }
+  .fsheet-blank {
+    background: var(--ok-soft); color: var(--ok); border-radius: 10px;
+    padding: 10px 14px; font-size: 0.95rem; font-weight: 700; margin: 0 0 12px;
+  }
+  .fsheet-body { font-size: 1.05rem; line-height: 1.65; margin: 0 0 8px; }
+  .fsheet-body b { color: var(--primary-dark); }
+  .fsheet-example {
+    background: var(--bg); border-radius: 10px; padding: 12px 14px;
+    font-size: 1rem; font-weight: 600; color: var(--muted); margin-top: 10px;
+  }
+  .fsheet-example a { color: var(--primary); font-weight: 800; }
+
   @media (max-width: 380px) {
     html { --base: 18px; }
     .row .val { flex-direction: column; align-items: flex-end; gap: 4px; }
   }
+
 </style>
 </head>
 <body>
@@ -352,6 +418,14 @@
       <span>
         <b>단가 × 수량으로</b>
         <small>하나에 얼마, 몇 개인지 알 때</small>
+      </span>
+      <span class="chevron" aria-hidden="true"></span>
+    </button>
+
+    <button class="mode" data-go="form">
+      <span>
+        <b>부가세 신고서 읽기</b>
+        <small>신고서 항목이 무슨 뜻인지 궁금할 때</small>
       </span>
       <span class="chevron" aria-hidden="true"></span>
     </button>
@@ -436,7 +510,32 @@
     <div id="guideSteps"></div>
     <button class="btn btn-ghost guide-back">← 계산 화면으로 돌아가기</button>
   </section>
+
+  <!-- 부가세 신고서 읽기 -->
+  <section id="screen-form" class="hidden">
+    <p class="title">부가세 신고서 읽기</p>
+    <div class="form-tabs">
+      <button class="form-tab on" data-form="general">일반과세자</button>
+      <button class="form-tab" data-form="simple">간이과세자</button>
+    </div>
+    <div id="pageTabs" class="page-tabs"></div>
+    <p class="form-hint">신고서의 <b>파란 칸</b>이나 아래 <b>항목 목록</b>을 누르면 쉬운 설명이 나와요.</p>
+    <button id="zoomBtn" class="zoom-btn">그림 크게 보기</button>
+    <div id="formPages"></div>
+  </section>
 </main>
+
+<!-- 신고서 항목 설명 시트 -->
+<div id="formSheet" class="sheet-back hidden">
+  <div class="sheet fsheet-inner" role="dialog" aria-modal="true" aria-labelledby="fsheetTitle">
+    <span id="fsheetTag" class="fsheet-tag"></span>
+    <p id="fsheetTitle" class="fsheet-title"></p>
+    <p id="fsheetBlank" class="fsheet-blank hidden">해당하는 사람만 적는 칸이에요. 대부분은 비워 두면 돼요.</p>
+    <p id="fsheetBody" class="fsheet-body"></p>
+    <div id="fsheetExample" class="fsheet-example hidden"></div>
+    <button id="fsheetClose" class="btn btn-primary">확인</button>
+  </div>
+</div>
 
 <footer>계산 결과는 참고용입니다.</footer>
 
@@ -806,7 +905,7 @@
   });
 
   // ---- 화면 이동 (휴대폰 뒤로가기 버튼도 동작) ----
-  const SCREENS = ['home', 'deposit', 'unit', 'guide'];
+  const SCREENS = ['home', 'deposit', 'unit', 'guide', 'form'];
   function route() {
     let screen = location.hash.replace('#', '');
     if (!SCREENS.includes(screen)) screen = 'home';
@@ -824,6 +923,665 @@
   });
   $('homeBtn').addEventListener('click', () => { location.hash = ''; });
   window.addEventListener('hashchange', route);
+
+  // ---- 부가세 신고서 읽기 ----
+
+  // 항목 설명
+  // no: 신고서에 적힌 번호, tag: 분류, blank: 해당자만 적어서 대부분은 비워 두는 칸
+  // body, example 안의 \n 은 줄바꿈
+  const FORM_TERMS = {
+    // === 두 신고서에 같이 나오는 칸 ===
+    manage: {
+      tag: '세무서용', title: '관리번호 · 처리기간', blank: true,
+      body: '<b>세무서가 쓰는 칸</b>이에요. 아무것도 적지 않아요.'
+    },
+    bizno: {
+      tag: '사업자 정보', title: '사업자등록번호',
+      body: '<b>내 사업자 번호 10자리</b>예요.\n사업자등록증 맨 위에 적혀 있어요.',
+      example: '예) 123-45-67890'
+    },
+    name: {
+      tag: '사업자 정보', title: '상호 · 성명(대표자명)',
+      body: '<b>상호</b>는 가게 이름, <b>성명</b>은 사장님 이름이에요.\n사업자등록증에 적힌 그대로 적어요.'
+    },
+    contact: {
+      tag: '사업자 정보', title: '주소 · 전화번호 · 전자우편',
+      body: '<b>사업장 주소와 연락처</b>예요.\n세무서에서 물어볼 게 있을 때 연락하는 곳이에요.'
+    },
+    refund: {
+      tag: '돌려받는 돈', title: '국세환급금 계좌신고',
+      body: '세금을 <b>돌려받을 내 통장</b>을 적는 칸이에요.\n돌려받을 돈이 없으면 비워 둬도 돼요.'
+    },
+    close: {
+      tag: '폐업', title: '폐업 신고', blank: true,
+      body: '<b>가게를 닫으면서</b> 마지막 신고를 할 때만 폐업한 날과 이유를 적어요.'
+    },
+    sign: {
+      tag: '확인', title: '신고인 서명',
+      body: '<b>적은 내용이 맞다고 확인</b>하는 칸이에요.\n홈택스·손택스로 신고하면 서명 대신 로그인(인증)으로 돼요.'
+    },
+    agent: {
+      tag: '세무사', title: '세무대리인 칸', blank: true,
+      body: '<b>세무사가 대신 신고해 줄 때</b> 세무사가 적는 칸이에요.\n직접 신고하면 비워 둬요.'
+    },
+
+    // === 간이과세자 제1쪽 ===
+    s_kind: {
+      tag: '신고 종류', title: '예정신고서 · 신고서 · 기한후과세표준신고서',
+      body: '어떤 신고인지 체크하는 칸이에요.\n' +
+        '<b>신고서</b>: 보통은 여기에 체크해요. 1년(1~12월)치를 다음 해 1월 25일까지 신고해요.\n' +
+        '<b>예정신고서</b>: 1~6월에 세금계산서를 발급한 간이과세자 등은 7월에 상반기분을 미리 신고해요.\n' +
+        '<b>기한후과세표준신고서</b>: 신고 날짜를 넘겨서 늦게 신고할 때예요. 가산세가 붙어요.'
+    },
+    s_period: {
+      tag: '신고 기간', title: '신고기간',
+      body: '<b>몇 월 며칠부터 며칠까지의 장사를 신고하는지</b> 적어요.\n간이과세자는 보통 1월 1일 ~ 12월 31일, 1년치를 한꺼번에 신고해요.\n중간에 문을 열었거나 닫았다면 그날부터(그날까지)예요.',
+      example: '예) 2025년 1월 1일 ~ 12월 31일'
+    },
+    s_old: {
+      tag: '매출', no: '(1)~(4)', title: '2021. 6. 30. 이전 과세분', blank: true,
+      body: '<b>2021년 6월 30일 전에 판 것</b>을 적는 옛날 칸이에요.\n지금 신고에는 거의 쓰지 않아요. 비워 둬요.'
+    },
+    s_sales: {
+      tag: '매출', no: '(5)~(9)', title: '2021. 7. 1. 이후 과세분 (내 업종 줄)',
+      body: '<b>내 업종에 해당하는 줄 하나</b>에 1년 매출을 적어요.\n' +
+        '<b>금액</b>: 손님에게 받은 돈 전부(부가세를 빼지 않은 공급대가)예요. 카드, 현금, 계좌이체 모두 더해요.\n' +
+        '<b>부가가치율</b>: 업종마다 정해진 비율이에요.\n' +
+        '· (5) 소매업, 음식점업 등: 15%\n· (6) 제조업, 농·임·어업 등: 20%\n· (7) 숙박업: 25%\n' +
+        '· (8) 건설업, 운수·창고업, 정보통신업, 그 밖의 서비스업: 30%\n· (9) 금융·보험 관련, 전문·과학·기술 서비스업, 부동산 임대업 등: 40%\n' +
+        '<b>세액</b>: 금액 × 부가가치율 × 10%예요.\n1년 매출이 <b>4,800만 원 미만</b>이면 세금을 내지 않아도 돼요. (신고는 해야 해요)',
+      example: '예) 음식점 매출 3,000만 원 → 3,000만 원 × 15% × 10% = 45만 원'
+    },
+    s_zero: {
+      tag: '매출', no: '(10)(11)', title: '영세율 적용분', blank: true,
+      body: '<b>세율이 0%인 매출</b>이에요. 수출하는 경우 등이에요.\n(10)은 세금계산서를 끊어준 것, (11)은 그 밖의 것이에요.'
+    },
+    s_12: {
+      tag: '매출', no: '(12)', title: '재고 납부세액', blank: true,
+      body: '<b>일반과세자에서 간이과세자로 바뀐 사업자</b>가 바뀐 날 가지고 있던 재고와 설비에 대해 내는 세금이에요.'
+    },
+    s_13: {
+      tag: '세금 계산', no: '(13)', title: '합계 ㉮',
+      body: '<b>공제받기 전의 세금</b>이에요.\n(1)~(12) 세액을 모두 더한 금액이에요.'
+    },
+    s_14: {
+      tag: '세금 줄이기', no: '(14)', title: '매입세금계산서등 수취세액공제 (2021. 6. 30. 이전)', blank: true,
+      body: '<b>2021년 6월 30일 전에 산 것</b>에 대한 옛날 칸이에요. 비워 둬요.'
+    },
+    s_15: {
+      tag: '세금 줄이기', no: '(15)', title: '매입세금계산서등 수취세액공제 (2021. 7. 1. 이후)',
+      body: '<b>장사에 쓸 물건을 사고 받은 세금계산서</b>(사업용 카드 영수증, 지출증빙 현금영수증 포함)가 있으면 세금을 깎아줘요.\n' +
+        '<b>금액</b>: 산 금액(부가세 포함) 합계\n<b>세액</b>: 금액 × 0.5%',
+      example: '예) 재료를 1,100만 원어치 사고 세금계산서를 받음 → 1,100만 원 × 0.5% = 5만 5천 원'
+    },
+    s_16: {
+      tag: '세금 줄이기', no: '(16)', title: '의제매입 세액공제', blank: true,
+      body: '음식점·제조업이 농산물·수산물을 살 때 세금을 깎아주던 제도예요.\n<b>2021년 6월 30일 전에 산 것만</b> 해당돼요. 지금은 비워 둬요.'
+    },
+    s_17: {
+      tag: '세금 줄이기', no: '(17)(18)', title: '매입자발행 세금계산서 세액공제', blank: true,
+      body: '판 사람이 세금계산서를 안 줘서 <b>내가 세무서 확인을 받아 직접 만든 세금계산서</b>가 있을 때만 적어요.'
+    },
+    s_19: {
+      tag: '세금 줄이기', no: '(19)', title: '전자신고 세액공제',
+      body: '<b>홈택스·손택스로 직접 신고하면</b> 세금을 깎아줘요.\n2026년 2월 시행령이 바뀌면서 1만 원에서 <b>5,000원</b>으로 줄었어요. 이 신고서 작성방법에도 5,000원으로 적혀 있어요.\n낼 세금보다 많이 깎아주지는 않아요.',
+      example: '국회에서 부가세 공제를 다시 1만 원으로 올리고 간이과세자는 더 깎아주는 법안을 심사 중이에요. 11월에 결정될 예정이에요. <a href="https://www.imaeil.com/page/view/2026101310030881189" target="_blank" rel="noopener">관련 기사 보기</a>'
+    },
+    s_20: {
+      tag: '세금 줄이기', no: '(20)', title: '전자세금계산서 발급세액 공제',
+      body: '<b>전자세금계산서를 끊어주고 국세청에 보내면 1건에 200원</b>씩 깎아줘요.\n1년에 100만 원까지예요.'
+    },
+    s_21: {
+      tag: '세금 줄이기', no: '(21)', title: '신용카드매출전표등 발행세액공제 (2021. 6. 30. 이전)', blank: true,
+      body: '<b>2021년 6월 30일 전에 판 것</b>에 대한 옛날 칸이에요. 비워 둬요.'
+    },
+    s_22: {
+      tag: '세금 줄이기', no: '(22)', title: '신용카드매출전표등 발행세액공제 (2021. 7. 1. 이후)',
+      body: '손님이 <b>카드·현금영수증·간편결제로 낸 매출</b>이 있으면 세금을 깎아줘요.\n' +
+        '<b>금액</b>: 카드 등으로 받은 매출 합계\n<b>세액</b>: 금액 × 1.3% (2026년 12월 31일까지. 그 뒤로는 1%)\n1년에 1,000만 원까지예요.',
+      example: '예) 카드 매출 2,000만 원 × 1.3% = 26만 원'
+    },
+    s_23: {
+      tag: '세금 줄이기', no: '(23)', title: '기타 공제', blank: true,
+      body: '그 밖에 따로 정해진 공제가 있을 때만 적어요.'
+    },
+    s_24: {
+      tag: '세금 줄이기', no: '(24)', title: '공제세액 합계 ㉯',
+      body: '<b>깎아주는 세금을 모두 더한 금액</b>이에요. (14)~(23)\n간이과세자는 깎아준 금액이 더 많아도 <b>돌려받지는 못해요</b>. ㉮ 세금까지만 깎아줘요.'
+    },
+    s_25: {
+      tag: '이미 낸 돈', no: '(25)', title: '매입자 납부특례 기납부세액', blank: true,
+      body: '금·구리 스크랩 등을 팔 때 <b>산 사람이 나 대신 미리 낸 부가세</b>예요. 해당 업종만 적어요.'
+    },
+    s_26: {
+      tag: '이미 낸 돈', no: '(26)', title: '예정부과(신고) 세액',
+      body: '<b>7월에 세무서 고지서를 받고 미리 낸 세금</b>(또는 예정신고로 낸 세금)이에요.\n이미 냈으니까 이번에 낼 세금에서 빼요.\n고지서를 받았는데 안 냈다면 적지 않아요.',
+      example: '예) 7월에 고지서로 20만 원을 냄 → 20만 원'
+    },
+    s_27: {
+      tag: '이미 낸 돈', no: '(27)', title: '수시부과 세액', blank: true,
+      body: '세무서가 <b>따로 세금을 매겨서 이미 낸 금액</b>이 있을 때만 적어요.'
+    },
+    s_28: {
+      tag: '벌금', no: '(28)', title: '가산세액 계',
+      body: '<b>늦게 신고했거나, 늦게 냈거나, 세금계산서를 잘못 처리해서 붙는 벌금</b>이에요.\n제3쪽 (63)~(81)에 자세히 적고 합계를 옮겨 와요.\n날짜 안에 제대로 했다면 0원이에요.'
+    },
+    s_29: {
+      tag: '최종 금액', no: '(29)', title: '차감 납부할 세액',
+      body: '<b>최종적으로 내야 하는 세금</b>이에요.\n㉮ − 공제 − 이미 낸 돈 + 가산세예요.\n다음 해 1월 25일까지 내요.',
+      example: '예) 45만 원 − 5만 5천 원 − 26만 원 − 5천 원 = 13만 원'
+    },
+    s_taxbase: {
+      tag: '매출 나누기', no: '(30)~(33)', title: '과세표준 명세',
+      body: '<b>매출을 업종별로 나눠 적는 칸</b>이에요.\n업태·종목·업종코드는 사업자등록증이나 홈택스에서 볼 수 있어요.\n<b>(32) 수입금액 제외</b>: 쓰던 차나 기계처럼 장사 물건이 아닌 것을 판 금액이에요. 부가세는 내지만 종합소득세 매출에서는 빠져요.\n(33) 합계는 (13) 금액과 같아야 해요.'
+    },
+    s_exempt: {
+      tag: '면세', no: '(34)~(37)', title: '면세수입금액', blank: true,
+      body: '<b>부가세가 없는 매출</b>(농산물·책 판매 등)도 함께 있는 사업자만 적어요.'
+    },
+
+    // === 간이과세자 제3쪽 ===
+    s2_note: {
+      tag: '제3쪽', title: '이 쪽은 해당 사항이 있는 사업자만',
+      body: '제3쪽은 제1쪽 칸을 <b>자세히 풀어 적는 곳</b>이에요.\n적을 게 있으면 사업자등록번호는 꼭 적어요.'
+    },
+    s_detail: {
+      tag: '매출 나누기', no: '(38)~(62)', title: '2021. 7. 1. 이후 과세분 명세',
+      body: '제1쪽 (5)~(9) 매출을 <b>받은 방법별로 나눠 적는 곳</b>이에요. 내 업종 칸만 적어요.\n' +
+        '· 세금계산서를 끊어준 매출\n· 매입자발행 세금계산서 매출\n· 카드·현금영수증 매출\n· 그 밖의 매출(영수증 없이 받은 현금, 계좌이체 등)\n' +
+        '모두 부가세를 빼지 않은 금액(공급대가)으로 적고, 합계를 제1쪽 금액 칸에 옮겨요.'
+    },
+    s_63: {
+      tag: '벌금', no: '(63)', title: '사업자 미등록 등 가산세',
+      body: '<b>사업자등록을 하지 않고 장사</b>한 경우예요.\n등록 전까지 매출(공급대가)의 0.5%예요. 남의 이름으로 등록했으면 1%예요.'
+    },
+    s_64: {
+      tag: '벌금', no: '(64)~(67)', title: '세금계산서 가산세',
+      body: '세금계산서를 <b>늦게 끊어줬거나</b>(1%), <b>안 끊어줬거나</b>(2%), <b>거짓으로 끊은</b>(4%) 경우예요.\n끊어 받아야 하는데 <b>안 받은</b> 경우는 0.5%예요.'
+    },
+    s_68: {
+      tag: '벌금', no: '(68)(69)', title: '전자세금계산서 발급명세 전송 가산세',
+      body: '전자세금계산서는 끊어준 <b>다음 날까지 국세청에 보내야</b> 해요.\n늦게 보냈으면 0.3%, 안 보냈으면 0.5%예요. 홈택스에서 끊어주면 자동으로 보내져요.'
+    },
+    s_70: {
+      tag: '벌금', no: '(70)(71)', title: '세금계산서 합계표 가산세',
+      body: '주고받은 세금계산서를 모아 적는 <b>합계표를 안 냈거나, 늦게 냈거나, 잘못 적은</b> 경우예요.'
+    },
+    s_72: {
+      tag: '벌금', no: '(72)~(75)', title: '신고 불성실 가산세',
+      body: '<b>신고를 안 했으면(무신고)</b> 낼 세금의 20%,\n<b>적게 신고했으면(과소신고)</b> 10%예요.\n일부러 속인 경우(부당)는 40%예요.\n늦게라도 빨리 신고하면 많이 깎아줘요.'
+    },
+    s_76: {
+      tag: '벌금', no: '(76)', title: '납부지연 가산세',
+      body: '세금을 <b>늦게 낸 날수만큼</b> 붙어요. 하루에 0.022%예요.',
+      example: '예) 100만 원을 30일 늦게 냄 → 100만 원 × 0.022% × 30일 = 6,600원'
+    },
+    s_77: {
+      tag: '벌금', no: '(77)~(80)', title: '그 밖의 가산세', blank: true,
+      body: '세무서 확인을 거쳐 매입세액을 공제받는 경우, 영세율 매출을 신고하지 않은 경우, 금·스크랩 거래계좌를 쓰지 않은 경우 등이에요.\n해당 업종만 신경 쓰면 돼요.'
+    },
+
+    // === 일반과세자 제1쪽 ===
+    g_kind: {
+      tag: '신고 종류', title: '예정 · 확정 · 기한후과세표준 · 영세율 등 조기환급',
+      body: '어떤 신고인지 체크하는 칸이에요.\n' +
+        '<b>확정</b>: 6개월치를 마무리하는 신고예요. 1~6월분은 7월 25일까지, 7~12월분은 다음 해 1월 25일까지 해요.\n' +
+        '<b>예정</b>: 1~3월분, 7~9월분을 미리 하는 신고예요. 개인사업자는 보통 예정신고 대신 세무서가 보내는 고지서로 미리 내요.\n' +
+        '<b>기한후과세표준</b>: 날짜를 넘겨서 늦게 하는 신고예요. 가산세가 붙어요.\n' +
+        '<b>영세율 등 조기환급</b>: 수출이나 시설투자로 돌려받을 세금을 빨리 받고 싶을 때예요.'
+    },
+    g_period: {
+      tag: '신고 기간', title: '신고기간',
+      body: '<b>몇 월 며칠부터 며칠까지의 장사를 신고하는지</b> 적어요.\n일반과세자는 1년을 둘로 나눠 신고해요.\n<b>제1기</b>: 1월 1일 ~ 6월 30일\n<b>제2기</b>: 7월 1일 ~ 12월 31일'
+    },
+    g_1: {
+      tag: '매출', no: '(1)', title: '과세 · 세금계산서 발급분',
+      body: '거래처에 <b>세금계산서를 끊어준 매출</b>이에요.\n금액 칸에는 부가세를 뺀 금액(공급가액), 세액 칸에는 그 10%를 적어요.',
+      example: '예) 공급가액 1,000만 원 → 세액 100만 원'
+    },
+    g_2: {
+      tag: '매출', no: '(2)', title: '매입자발행 세금계산서', blank: true,
+      body: '내가 세금계산서를 안 끊어줘서 <b>산 사람이 세무서 확인을 받아 직접 만든 세금계산서</b>예요.\n거의 해당이 없어요.'
+    },
+    g_3: {
+      tag: '매출', no: '(3)', title: '신용카드 · 현금영수증 발행분',
+      body: '손님이 <b>카드로 결제했거나 현금영수증을 끊어준 매출</b>이에요. 간편결제 같은 전자화폐로 받은 것도 여기예요.\n받은 돈에서 부가세를 뺀 금액(받은 돈 ÷ 1.1)을 적어요.\n세금계산서도 같이 끊어준 매출은 (1)에만 적어요. 두 번 적으면 안 돼요.',
+      example: '예) 카드 매출 1,100만 원 → 금액 1,000만 원, 세액 100만 원'
+    },
+    g_4: {
+      tag: '매출', no: '(4)', title: '기타 (정규영수증 외 매출분)',
+      body: '<b>영수증 없이 받은 매출</b>이에요.\n현금영수증을 안 끊은 현금, 계좌이체로 받은 돈 등이에요.\n이것도 부가세를 뺀 금액을 적어요.',
+      example: '예) 계좌로 330만 원 받음 → 금액 300만 원, 세액 30만 원'
+    },
+    g_5: {
+      tag: '매출', no: '(5)', title: '영세율 · 세금계산서 발급분', blank: true,
+      body: '<b>세율이 0%인 매출</b> 중 세금계산서를 끊어준 것이에요.\n수출하는 회사에 물건을 대주는 경우(내국신용장·구매확인서) 등이에요.'
+    },
+    g_6: {
+      tag: '매출', no: '(6)', title: '영세율 · 기타', blank: true,
+      body: '<b>세율이 0%인 매출</b> 중 세금계산서가 없는 것이에요.\n외국으로 직접 수출한 경우 등이에요.'
+    },
+    g_7: {
+      tag: '매출', no: '(7)', title: '예정신고 누락분', blank: true,
+      body: '<b>예정신고 때 빠뜨린 매출</b>을 확정신고 때 적는 칸이에요.\n제4쪽 (36)~(40)에 자세히 적고 합계를 옮겨 와요.\n예정신고를 하지 않고 고지서로 낸 개인사업자는 1~3월 매출도 그냥 (1)~(4)에 같이 적어요.'
+    },
+    g_8: {
+      tag: '매출', no: '(8)', title: '대손세액 가감', blank: true,
+      body: '외상으로 팔았는데 거래처가 망해서 <b>돈을 못 받게 된 경우</b>, 그 부가세만큼 빼줘요(마이너스로 적어요).\n나중에 그 돈을 받으면 다시 더해요.'
+    },
+    g_9: {
+      tag: '매출', no: '(9)', title: '합계 ㉮ (매출세액)',
+      body: '<b>손님에게 받은 부가세를 모두 더한 금액</b>이에요.\n이 돈은 원래 손님이 낸 세금이라, 내가 맡아 뒀다가 나라에 내는 거예요.'
+    },
+    g_10: {
+      tag: '매입', no: '(10)', title: '세금계산서 수취분 · 일반매입',
+      body: '<b>장사하려고 물건이나 서비스를 사고 받은 세금계산서</b>예요.\n재료, 상품, 가게 월세 등이에요.\n여기 적은 부가세는 낼 세금에서 빼줘요.',
+      example: '예) 재료를 550만 원어치 사고 세금계산서 받음 → 금액 500만 원, 세액 50만 원'
+    },
+    g_11: {
+      tag: '매입', no: '(11)', title: '수출기업 수입분 납부유예', blank: true,
+      body: '수출 회사가 물건을 수입할 때 부가세 납부를 미뤄 둔 경우예요.\n거의 해당이 없어요.'
+    },
+    g_12: {
+      tag: '매입', no: '(12)', title: '세금계산서 수취분 · 고정자산 매입',
+      body: '<b>오래 쓰는 물건을 사고 받은 세금계산서</b>예요.\n기계, 컴퓨터, 가게 인테리어, 냉장고 같은 설비 등이에요.\n일반매입과 나눠서 적어요.'
+    },
+    g_13: {
+      tag: '매입', no: '(13)', title: '예정신고 누락분 (매입)', blank: true,
+      body: '<b>예정신고 때 빠뜨린 매입</b>을 확정신고 때 적는 칸이에요.\n제4쪽 (41)~(43)에 자세히 적고 합계를 옮겨 와요.'
+    },
+    g_14: {
+      tag: '매입', no: '(14)', title: '매입자발행 세금계산서', blank: true,
+      body: '판 사람이 세금계산서를 안 줘서 <b>내가 세무서 확인을 받아 직접 만든 세금계산서</b>예요.'
+    },
+    g_15: {
+      tag: '매입', no: '(15)', title: '그 밖의 공제매입세액',
+      body: '세금계산서는 없지만 공제받을 수 있는 매입이에요.\n<b>사업용 카드로 산 것</b>, <b>지출증빙 현금영수증</b>을 받은 것, 음식점이 산 농산물·수산물(의제매입세액) 등이에요.\n제4쪽 (44)~(52)에 자세히 적고 합계를 옮겨 와요.'
+    },
+    g_16: {
+      tag: '매입', no: '(16)', title: '매입 합계',
+      body: '(10)부터 (15)까지 <b>산 것들의 부가세를 모두 더한 금액</b>이에요. (11)은 빼요.'
+    },
+    g_17: {
+      tag: '매입', no: '(17)', title: '공제받지 못할 매입세액',
+      body: '부가세를 냈어도 <b>돌려받을 수 없는 것</b>이에요.\n장사와 상관없는 지출, 접대비, 일반 승용차(경차 등 빼고)를 사거나 굴리는 비용 등이에요.\n(10)~(15)에 같이 적었다면 여기서 다시 빼요. 제4쪽 (53)~(56)에 자세히 적어요.'
+    },
+    g_18: {
+      tag: '매입', no: '(18)', title: '차감계 ㉯ (매입세액)',
+      body: '<b>낼 세금에서 빼주는 매입 부가세</b>예요.\n(16)에서 (17)을 뺀 금액이에요.'
+    },
+    g_pay: {
+      tag: '세금 계산', title: '납부(환급)세액 ㉰',
+      body: '<b>받은 부가세에서 낸 부가세를 뺀 금액</b>이에요. ㉮ − ㉯\n마이너스면 세금을 돌려받아요(환급).',
+      example: '예) 매출세액 200만 원 − 매입세액 80만 원 = 120만 원'
+    },
+    g_19: {
+      tag: '세금 줄이기', no: '(19)', title: '그 밖의 경감 · 공제세액',
+      body: '여러 가지 이유로 <b>세금을 더 깎아주는 금액</b>이에요.\n확정신고를 홈택스·손택스로 직접 하면 받는 <b>전자신고 세액공제</b>, 전자세금계산서 발급세액공제 등이에요.\n제4쪽 (57)~(63)에 자세히 적고 합계를 옮겨 와요.'
+    },
+    g_20: {
+      tag: '세금 줄이기', no: '(20)', title: '신용카드매출전표등 발행공제 등',
+      body: '소매업·음식점·숙박업 등 개인사업자가 <b>카드나 현금영수증·간편결제로 받은 매출</b>이 있으면 세금을 깎아줘요.\n부가세를 포함한 결제 금액의 <b>1.3%</b>예요. (2026년 12월 31일까지 1년에 1,000만 원까지, 그 뒤로는 500만 원까지)\n작년 매출이 10억 원을 넘으면 받을 수 없고, 낼 세금보다 많이 깎아주지는 않아요.',
+      example: '예) 카드 매출 1,100만 원 × 1.3% = 14만 3천 원'
+    },
+    g_21: {
+      tag: '세금 줄이기', no: '(21)', title: '경감 · 공제 합계 ㉱',
+      body: '(19) + (20), <b>깎아주는 세금을 모두 더한 금액</b>이에요.'
+    },
+    g_22: {
+      tag: '세금 줄이기', no: '(22)', title: '소규모 개인사업자 부가가치세 감면세액', blank: true,
+      body: '2020년 코로나 때 잠깐 있었던 감면이에요.\n<b>지금은 비워 둬요.</b>'
+    },
+    g_23: {
+      tag: '이미 정리된 돈', no: '(23)', title: '예정신고 미환급 세액', blank: true,
+      body: '예정신고 때 돌려받을 세금이 나왔는데 <b>아직 돌려받지 않은 금액</b>이에요.\n이번에 낼 세금에서 빼줘요.'
+    },
+    g_24: {
+      tag: '이미 낸 돈', no: '(24)', title: '예정고지세액',
+      body: '<b>4월이나 10월에 세무서 고지서를 받고 미리 낸 세금</b>이에요.\n이미 냈으니까 이번에 낼 세금에서 빼요.\n고지서를 받았는데 안 냈다면 적지 않아요.',
+      example: '예) 4월에 고지서로 60만 원을 냄 → 60만 원'
+    },
+    g_25: {
+      tag: '이미 낸 돈', no: '(25)', title: '수시부과세액', blank: true,
+      body: '세무서가 <b>따로 세금을 매겨서 이미 낸 금액</b>이 있을 때만 적어요.'
+    },
+    g_special: {
+      tag: '특정 업종', no: '(26)~(28)', title: '사업양수자 · 매입자 · 신용카드업자가 대신 낸 세액', blank: true,
+      body: '사업을 넘겨받은 사람, 금·구리 스크랩 등을 산 사람, 카드회사가 <b>나 대신 미리 낸 부가세</b>예요.\n특정한 경우에만 해당돼요.'
+    },
+    g_29: {
+      tag: '벌금', no: '(29)', title: '가산세액 계',
+      body: '<b>늦게 신고했거나, 늦게 냈거나, 세금계산서를 잘못 처리해서 붙는 벌금</b>이에요.\n제4쪽 (64)~(84)에 자세히 적고 합계를 옮겨 와요.\n날짜 안에 제대로 했다면 0원이에요.'
+    },
+    g_30: {
+      tag: '최종 금액', no: '(30)', title: '차감 · 가감하여 납부할 세액 (환급받을 세액)',
+      body: '<b>최종적으로 내야 하는 세금</b>이에요.\n납부(환급)세액에서 깎아준 금액, 미리 낸 금액을 빼고 가산세를 더해요.\n마이너스면 그만큼 돌려받아요.',
+      example: '예) 120만 원 − 5천 원(전자신고) − 60만 원(예정고지) = 59만 5천 원'
+    },
+    g_total: {
+      tag: '여러 사업장', title: '총괄 납부 사업자가 납부할 세액', blank: true,
+      body: '<b>사업장이 여러 곳</b>이라 한 곳에서 모아서 내겠다고 신청한 사업자만 적어요.'
+    },
+    g_mutual: {
+      tag: '영세율', title: '영세율 상호주의', blank: true,
+      body: '외국인·외국법인에게 0% 세율을 적용받는 경우에만 적어요.'
+    },
+    g_taxbase: {
+      tag: '매출 나누기', no: '(31)~(35)', title: '과세표준 명세',
+      body: '<b>매출을 업종별로 나눠 적는 칸</b>이에요.\n업태·종목·업종코드는 사업자등록증이나 홈택스에서 볼 수 있어요.\n<b>(34) 수입금액 제외</b>: 쓰던 차나 기계처럼 장사 물건이 아닌 것을 판 금액이에요. 부가세는 내지만 종합소득세 매출에서는 빠져요.'
+    },
+
+    // === 일반과세자 제4쪽 ===
+    g2_note: {
+      tag: '제4쪽', title: '이 쪽은 해당 사항이 있는 사업자만',
+      body: '제4쪽은 제1쪽 칸을 <b>자세히 풀어 적는 곳</b>이에요.\n해당하는 내용이 없으면 제4쪽은 비워 둬도 돼요.\n적을 게 있으면 사업자등록번호는 꼭 적어요.'
+    },
+    g_44: {
+      tag: '매입', no: '(44)(45)', title: '신용카드매출전표등 수령명세서 제출분',
+      body: '<b>사업용 카드나 지출증빙 현금영수증으로 산 것</b>이에요.\n(44)는 재료·상품 등 일반매입, (45)는 기계·설비 같은 고정자산이에요.\n간이과세자·면세사업자에게 산 것, 접대비, 장사와 상관없는 것은 빼요.'
+    },
+    g_46: {
+      tag: '매입', no: '(46)', title: '의제매입세액',
+      body: '부가세가 없는 <b>쌀, 채소, 고기, 생선 같은 농산물·수산물</b>을 사서 음식이나 물건을 만들어 팔면, 산 금액의 일부를 세금에서 빼줘요.\n개인 음식점은 산 금액의 <b>8/108</b>(매출이 작으면 9/109)이에요. 한도가 있어서 제5쪽 계산법을 봐야 해요.',
+      example: '예) 농산물 1,080만 원 × 8/108 = 80만 원'
+    },
+    g_47: {
+      tag: '매입', no: '(47)', title: '재활용폐자원등 매입세액', blank: true,
+      body: '고물상, 중고차 매매처럼 <b>사업자가 아닌 사람에게서 고물·중고차를 사는</b> 사업자만 해당돼요.'
+    },
+    g_48: {
+      tag: '매입', no: '(48)', title: '과세사업전환 매입세액', blank: true,
+      body: '부가세가 없는 사업에 쓰던 물건을 <b>부가세가 있는 사업에 쓰게 된 경우</b>예요.'
+    },
+    g_49: {
+      tag: '매입', no: '(49)', title: '재고매입세액', blank: true,
+      body: '<b>간이과세자에서 일반과세자로 바뀐 경우</b>, 바뀐 날 가지고 있던 재고와 설비의 부가세 일부를 빼줘요.\n미리 재고품 신고를 해야 해요.'
+    },
+    g_50: {
+      tag: '매입', no: '(50)', title: '변제대손세액', blank: true,
+      body: '외상값을 못 갚아서 공제가 취소됐다가, <b>나중에 갚은 경우</b> 다시 빼주는 금액이에요.'
+    },
+    g_51: {
+      tag: '매입', no: '(51)', title: '외국인 관광객에 대한 환급세액', blank: true,
+      body: '외국인 관광객에게 부가세를 돌려주는 <b>관광숙박시설, 의료기관</b> 등만 해당돼요.'
+    },
+    g_53: {
+      tag: '매입', no: '(53)', title: '공제받지 못할 매입세액 (자세히)',
+      body: '부가세를 냈어도 <b>돌려받을 수 없는 매입</b>이에요.\n· 세금계산서를 안 받았거나 잘못 적힌 것\n· 장사와 상관없는 지출\n· 일반 승용차(경차, 9인승 이상 등 빼고)를 사거나 굴리는 비용\n· 접대비\n· 면세사업, 땅과 관련된 지출'
+    },
+    g_54: {
+      tag: '매입', no: '(54)', title: '공통매입세액 중 면세사업등 해당 세액', blank: true,
+      body: '부가세가 있는 장사와 없는 장사를 <b>같이 하는 사업자</b>만 해당돼요.\n함께 쓰는 물건의 부가세 중 면세 장사 몫은 빼요.'
+    },
+    g_55: {
+      tag: '매입', no: '(55)', title: '대손처분받은 세액', blank: true,
+      body: '내가 <b>외상값을 못 갚아서</b> 판 사람이 대손 처리를 했다면, 전에 공제받은 부가세를 다시 빼요.'
+    },
+    g_57: {
+      tag: '세금 줄이기', no: '(57)', title: '전자신고 세액공제',
+      body: '확정신고를 <b>홈택스·손택스로 직접 하면</b> 세금을 깎아줘요. 예정신고 때는 없어요.\n2026년 2월 시행령이 바뀌면서 1만 원에서 <b>5,000원</b>으로 줄었어요. 이 신고서 작성방법에도 5,000원으로 적혀 있어요.',
+      example: '국회에서 부가세 공제를 다시 1만 원으로 올리는 법안을 심사 중이에요. 11월에 결정될 예정이에요. <a href="https://www.imaeil.com/page/view/2026101310030881189" target="_blank" rel="noopener">관련 기사 보기</a>'
+    },
+    g_58: {
+      tag: '세금 줄이기', no: '(58)', title: '전자세금계산서 발급세액 공제',
+      body: '작년 매출(공급가액)이 3억 원이 안 되는 개인사업자가 <b>전자세금계산서를 끊어주면 1건에 200원</b>씩 깎아줘요.\n1년에 100만 원까지예요. 올해 처음 사업을 시작했어도 받을 수 있어요.'
+    },
+    g_59: {
+      tag: '세금 줄이기', no: '(59)', title: '일반택시 운송사업자 경감세액', blank: true,
+      body: '<b>택시 사업자</b>만 해당돼요.'
+    },
+    g_60: {
+      tag: '세금 줄이기', no: '(60)~(62)', title: '대리납부 · 현금영수증사업자 · 기타 공제', blank: true,
+      body: '카드회사가 대신 낸 부가세를 공제받는 업종, <b>현금영수증 가맹점 사업을 하는 회사</b> 등 특정한 경우만 해당돼요.'
+    },
+    g_64: {
+      tag: '벌금', no: '(64)', title: '사업자 미등록 등 가산세',
+      body: '<b>사업자등록을 하지 않고 장사</b>한 경우예요.\n등록 전까지 매출(공급가액)의 1%예요. 남의 이름으로 등록했으면 2%예요.'
+    },
+    g_65: {
+      tag: '벌금', no: '(65)~(68)', title: '세금계산서 가산세',
+      body: '세금계산서를 <b>늦게 끊어줬거나</b>(1%), <b>늦게 받았거나</b>(0.5%), <b>안 끊어줬거나</b>(2%), <b>거짓으로 주고받은</b>(4%) 경우예요.\n괄호 안은 공급가액에 곱하는 비율이에요.'
+    },
+    g_69: {
+      tag: '벌금', no: '(69)(70)', title: '전자세금계산서 발급명세 전송 가산세',
+      body: '전자세금계산서는 끊어준 <b>다음 날까지 국세청에 보내야</b> 해요.\n늦게 보냈으면 0.3%, 안 보냈으면 0.5%예요. 홈택스에서 끊어주면 자동으로 보내져요.'
+    },
+    g_71: {
+      tag: '벌금', no: '(71)(72)', title: '세금계산서 합계표 가산세',
+      body: '주고받은 세금계산서를 모아 적는 <b>합계표를 안 냈거나, 늦게 냈거나, 잘못 적은</b> 경우예요.'
+    },
+    g_73: {
+      tag: '벌금', no: '(73)~(76)', title: '신고 불성실 가산세',
+      body: '<b>신고를 안 했으면(무신고)</b> 낼 세금의 20%,\n<b>적게 신고했거나 많이 돌려받았으면(과소·초과환급)</b> 10%예요.\n일부러 속인 경우(부당)는 40%예요.\n늦게라도 빨리 신고하면 많이 깎아줘요.'
+    },
+    g_77: {
+      tag: '벌금', no: '(77)', title: '납부지연 가산세',
+      body: '세금을 <b>늦게 낸 날수만큼</b> 붙어요. 하루에 0.022%예요.',
+      example: '예) 100만 원을 30일 늦게 냄 → 100만 원 × 0.022% × 30일 = 6,600원'
+    },
+    g_78: {
+      tag: '벌금', no: '(78)~(83)', title: '그 밖의 가산세', blank: true,
+      body: '영세율 신고, 현금매출명세서, 부동산 임대 명세서, 신용카드매출전표 수령명세서 등을 <b>안 냈거나 잘못 낸 경우</b>예요.\n해당 업종만 신경 쓰면 돼요.'
+    },
+    g_exempt: {
+      tag: '면세', no: '(85)~(88)', title: '면세사업 수입금액', blank: true,
+      body: '<b>부가세가 없는 매출</b>(농산물·책 판매, 학원 등)도 함께 있는 사업자만 적어요.'
+    },
+    g_invoice: {
+      tag: '면세', no: '(89)(90)', title: '계산서 발급 및 수취 명세', blank: true,
+      body: '부가세가 없는 거래에서 주고받은 <b>계산서</b>(세금계산서 아님)의 합계예요.\n면세 물건을 사고팔 때 받는 서류예요.'
+    }
+  };
+
+  // 신고서 그림 위 누르는 칸. 위치는 원본 그림 픽셀로 [항목, 왼쪽, 위, 오른쪽, 아래]
+  // 일반과세자 제1쪽 표는 (1)부터 한 줄씩 [위, 아래]. (22)부터는 줄 이름이 왼쪽 끝에서 시작
+  const G_ROWS = [265, 281, 297, 312, 328, 348, 368, 383, 399, 415, 431, 446, 462, 478, 493, 509, 525, 540,
+    556, 573, 589, 605, 620, 636, 652, 667, 683, 699, 715, 730, 746, 762, 778];
+  const gRows = (key, from, to) => [key, from >= 22 ? 75 : 122, G_ROWS[from], 715, G_ROWS[to + 1]];
+  const FORM_PAGES = {
+    s1: {
+      img: 'images/vat-simple.png', alt: '간이과세자 부가가치세 신고서 제1쪽', w: 793, h: 1121,
+      spots: [
+        ['s_kind', 300, 93, 705, 118],
+        ['manage', 75, 132, 715, 147],
+        ['s_period', 75, 147, 715, 160],
+        ['name', 75, 160, 420, 173],
+        ['bizno', 420, 160, 715, 173],
+        ['contact', 75, 173, 715, 212],
+        ['s_old', 105, 239, 715, 291],
+        ['s_sales', 148, 291, 715, 304], ['s_sales', 148, 304, 715, 317], ['s_sales', 148, 317, 715, 330],
+        ['s_sales', 148, 330, 715, 353], ['s_sales', 148, 353, 715, 400],
+        ['s_zero', 105, 400, 715, 426],
+        ['s_12', 105, 426, 715, 439],
+        ['s_13', 105, 439, 715, 452],
+        ['s_14', 105, 452, 715, 466],
+        ['s_15', 105, 466, 715, 478],
+        ['s_16', 105, 478, 715, 492],
+        ['s_17', 105, 492, 715, 518],
+        ['s_19', 105, 518, 715, 531],
+        ['s_20', 105, 531, 715, 544],
+        ['s_21', 105, 544, 715, 557],
+        ['s_22', 105, 557, 715, 570],
+        ['s_23', 105, 570, 715, 583],
+        ['s_24', 105, 583, 715, 596],
+        ['s_25', 75, 596, 715, 609],
+        ['s_26', 75, 609, 715, 622],
+        ['s_27', 75, 622, 715, 635],
+        ['s_28', 75, 635, 715, 648],
+        ['s_29', 75, 648, 715, 662],
+        ['s_taxbase', 75, 675, 715, 753],
+        ['s_exempt', 75, 766, 715, 845],
+        ['refund', 75, 857, 715, 870],
+        ['close', 75, 883, 715, 896],
+        ['g_mutual', 75, 910, 715, 923],
+        ['sign', 75, 932, 715, 995],
+        ['agent', 75, 995, 715, 1070],
+      ]
+    },
+    s2: {
+      img: 'images/vat-simple2.png', alt: '간이과세자 부가가치세 신고서 제3쪽', w: 793, h: 1121,
+      spots: [
+        ['s2_note', 75, 92, 715, 154],
+        ['s_detail', 130, 181, 715, 284], ['s_detail', 130, 284, 715, 388], ['s_detail', 130, 388, 715, 492],
+        ['s_detail', 130, 492, 715, 596], ['s_detail', 130, 596, 715, 699],
+        ['s_28', 75, 705, 175, 1060],
+        ['s_63', 175, 723, 715, 741],
+        ['s_64', 175, 741, 715, 806],
+        ['s_68', 175, 806, 715, 843],
+        ['s_70', 175, 843, 715, 879],
+        ['s_72', 175, 879, 715, 952],
+        ['s_76', 175, 952, 715, 970],
+        ['s_77', 175, 970, 715, 1042],
+      ]
+    },
+    g1: {
+      img: 'images/vat-general.png', alt: '일반과세자 부가가치세 신고서 제1쪽', w: 793, h: 1121,
+      spots: [
+        ['g_kind', 330, 35, 560, 105],
+        ['manage', 75, 117, 715, 135],
+        ['g_period', 75, 135, 715, 150],
+        ['name', 75, 150, 450, 174],
+        ['bizno', 450, 150, 715, 174],
+        ['contact', 120, 174, 715, 226],
+        gRows('g_1', 0, 0), gRows('g_2', 1, 1), gRows('g_3', 2, 2), gRows('g_4', 3, 3),
+        gRows('g_5', 4, 4), gRows('g_6', 5, 5), gRows('g_7', 6, 6), gRows('g_8', 7, 7),
+        gRows('g_9', 8, 8), gRows('g_10', 9, 9), gRows('g_11', 10, 10), gRows('g_12', 11, 11),
+        gRows('g_13', 12, 12), gRows('g_14', 13, 13), gRows('g_15', 14, 14), gRows('g_16', 15, 15),
+        gRows('g_17', 16, 16), gRows('g_18', 17, 17), gRows('g_pay', 18, 18), gRows('g_19', 19, 19),
+        gRows('g_20', 20, 20), gRows('g_21', 21, 21), gRows('g_22', 22, 22), gRows('g_23', 23, 23),
+        gRows('g_24', 24, 24), gRows('g_25', 25, 25), gRows('g_special', 26, 28), gRows('g_29', 29, 29),
+        gRows('g_30', 30, 30), gRows('g_total', 31, 31),
+        ['refund', 75, 783, 715, 810],
+        ['close', 75, 815, 715, 832],
+        ['g_mutual', 75, 838, 715, 893],
+        ['g_taxbase', 75, 898, 355, 1042],
+        ['sign', 355, 898, 715, 964],
+        ['agent', 355, 964, 715, 1000],
+        ['agent', 75, 1042, 715, 1074],
+      ]
+    },
+    g2: {
+      img: 'images/vat-general2.png', alt: '일반과세자 부가가치세 신고서 제4쪽', w: 793, h: 1121,
+      spots: [
+        ['g2_note', 75, 90, 715, 149],
+        ['g_7', 75, 149, 170, 278],
+        ['g_7', 170, 163, 715, 235],
+        ['g_13', 170, 235, 715, 278],
+        ['g_15', 75, 283, 170, 427],
+        ['g_44', 170, 298, 715, 327],
+        ['g_46', 170, 327, 715, 341],
+        ['g_47', 170, 341, 715, 355],
+        ['g_48', 170, 355, 715, 370],
+        ['g_49', 170, 370, 715, 384],
+        ['g_50', 170, 384, 715, 398],
+        ['g_51', 170, 398, 715, 413],
+        ['g_17', 75, 432, 170, 504],
+        ['g_53', 170, 447, 715, 461],
+        ['g_54', 170, 461, 715, 475],
+        ['g_55', 170, 475, 715, 490],
+        ['g_19', 75, 510, 170, 625],
+        ['g_57', 170, 524, 715, 538],
+        ['g_58', 170, 538, 715, 553],
+        ['g_59', 170, 553, 715, 567],
+        ['g_60', 170, 567, 715, 610],
+        ['g_29', 75, 630, 170, 946],
+        ['g_64', 170, 644, 715, 659],
+        ['g_65', 170, 659, 715, 716],
+        ['g_69', 170, 716, 715, 745],
+        ['g_71', 170, 745, 715, 774],
+        ['g_73', 170, 774, 715, 831],
+        ['g_77', 170, 831, 715, 846],
+        ['g_78', 170, 846, 715, 932],
+        ['g_exempt', 75, 952, 715, 1024],
+        ['g_invoice', 75, 1029, 715, 1059],
+      ]
+    }
+  };
+
+  // 설명 시트 열기 / 닫기 (누른 항목은 그림에서도 진하게)
+  function openFormSheet(key) {
+    const t = FORM_TERMS[key];
+    $('fsheetTag').textContent = t.tag;
+    $('fsheetTitle').textContent = (t.no ? t.no + ' ' : '') + t.title;
+    $('fsheetBlank').classList.toggle('hidden', !t.blank);
+    $('fsheetBody').innerHTML = t.body.replace(/\n/g, '<br>');
+    $('fsheetExample').innerHTML = t.example || '';
+    $('fsheetExample').classList.toggle('hidden', !t.example);
+    document.querySelectorAll('.fspot').forEach((s) => s.classList.toggle('on', s.dataset.key === key));
+    $('formSheet').classList.remove('hidden');
+  }
+  function closeFormSheet() {
+    $('formSheet').classList.add('hidden');
+    document.querySelectorAll('.fspot.on').forEach((s) => s.classList.remove('on'));
+  }
+  $('fsheetClose').addEventListener('click', closeFormSheet);
+  $('formSheet').addEventListener('click', (e) => { if (e.target === $('formSheet')) closeFormSheet(); });
+
+  // 신고서 한 장 = 그림 + 누르는 칸 + 항목 목록
+  Object.entries(FORM_PAGES).forEach(([id, page]) => {
+    const box = document.createElement('div');
+    box.id = 'formPage-' + id;
+    box.className = 'hidden';
+    box.innerHTML = '<div class="form-scroll"><div class="form-img"><img src="' + page.img + '" alt="' + page.alt + '"></div></div>' +
+      '<p class="form-list-title">항목 목록</p><div class="form-list"></div>';
+    const img = box.querySelector('.form-img');
+    const list = box.querySelector('.form-list');
+    const listed = new Set();
+    page.spots.forEach(([key, x1, y1, x2, y2]) => {
+      const t = FORM_TERMS[key];
+      const spot = document.createElement('button');
+      spot.className = 'fspot';
+      spot.dataset.key = key;
+      spot.setAttribute('aria-label', t.title + ' 설명 보기');
+      spot.style.left = (x1 / page.w * 100) + '%';
+      spot.style.top = (y1 / page.h * 100) + '%';
+      spot.style.width = ((x2 - x1) / page.w * 100) + '%';
+      spot.style.height = ((y2 - y1) / page.h * 100) + '%';
+      spot.addEventListener('click', () => openFormSheet(key));
+      img.appendChild(spot);
+
+      if (listed.has(key)) return;
+      listed.add(key);
+      const item = document.createElement('button');
+      item.innerHTML = '<span class="no">' + (t.no || '') + '</span><span>' + t.title + '</span>' +
+        (t.blank ? '<span class="blank">해당자만</span>' : '');
+      item.addEventListener('click', () => openFormSheet(key));
+      list.appendChild(item);
+    });
+    $('formPages').appendChild(box);
+  });
+
+  // 간이 / 일반, 앞쪽 / 해당자만 쪽 전환
+  const FORM_TYPES = {
+    simple: [['s1', '제1쪽 (신고 내용)'], ['s2', '제3쪽 (해당자만)']],
+    general: [['g1', '제1쪽 (신고 내용)'], ['g2', '제4쪽 (해당자만)']],
+  };
+  let formType = 'general', formPage = 'g1';
+  function showFormPage() {
+    Object.keys(FORM_PAGES).forEach((id) => $('formPage-' + id).classList.toggle('hidden', id !== formPage));
+    document.querySelectorAll('.form-tab').forEach((b) => b.classList.toggle('on', b.dataset.form === formType));
+    $('pageTabs').innerHTML = '';
+    FORM_TYPES[formType].forEach(([id, label]) => {
+      const b = document.createElement('button');
+      b.className = 'page-tab' + (id === formPage ? ' on' : '');
+      b.textContent = label;
+      b.addEventListener('click', () => { formPage = id; showFormPage(); });
+      $('pageTabs').appendChild(b);
+    });
+  }
+  document.querySelectorAll('.form-tab').forEach((b) => b.addEventListener('click', () => {
+    formType = b.dataset.form;
+    formPage = FORM_TYPES[formType][0][0];
+    showFormPage();
+  }));
+  showFormPage();
+
+  // 그림 크게 보기 (휴대폰에서는 칸이 작아서 옆으로 밀어 보게)
+  $('zoomBtn').addEventListener('click', () => {
+    const zoom = !document.querySelector('.form-scroll').classList.contains('zoom');
+    document.querySelectorAll('.form-scroll').forEach((s) => s.classList.toggle('zoom', zoom));
+    $('zoomBtn').textContent = zoom ? '그림 작게 보기' : '그림 크게 보기';
+  });
 
   // ---- 보기 설정 (글씨 크기, 숫자 넣는 방법) ----
   function load(key, fallback) {
