@@ -1767,8 +1767,19 @@
     }
   };
 
+  // 손가락으로 확대한 채 창이 뜨면 창이 잘려 보여서, 창을 열 때 원래 배율로 되돌림
+  // (잠깐 최대 배율을 1로 막았다가 풀어서, 다시 확대할 수는 있게 함)
+  function resetPinchZoom() {
+    if (!window.visualViewport || visualViewport.scale <= 1.01) return;
+    const vp = document.querySelector('meta[name="viewport"]');
+    const orig = vp.content;
+    vp.content = orig + ', maximum-scale=1';
+    setTimeout(() => { vp.content = orig; }, 400);
+  }
+
   // 설명 시트 열기 / 닫기 (누른 항목은 그림에서도 진하게)
   function openFormSheet(key) {
+    resetPinchZoom();
     const t = FORM_TERMS[key];
     $('fsheetTag').textContent = t.tag;
     $('fsheetTitle').textContent = (t.no ? t.no + ' ' : '') + t.title;
@@ -1811,6 +1822,7 @@
   }
 
   function openPickSheet(page, near) {
+    resetPinchZoom();
     $('pickList').innerHTML = '';
     near.forEach((n, i) => {
       const t = FORM_TERMS[n.key];
